@@ -1,14 +1,25 @@
-"use client"
+"use client";
 
-import { Button } from "@/components/ui/button"
-import { Car, MessageCircle, Menu, X, Phone } from "lucide-react"
-import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { useState } from "react"
+import { Button } from "@/components/ui/button";
+import { Car, MessageCircle, Menu, X, Phone, User, LogOut } from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import ShoppingCartComponent from "./ShoppingCart";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export default function Navigation() {
-  const pathname = usePathname()
-  const [isOpen, setIsOpen] = useState(false)
+  const pathname = usePathname();
+  const [isOpen, setIsOpen] = useState(false);
+  const { user, logout } = useAuth();
 
   const navItems = [
     { href: "/", label: "Home" },
@@ -17,7 +28,7 @@ export default function Navigation() {
     { href: "/partner", label: "Partners" },
     { href: "/about", label: "About" },
     { href: "/contact", label: "Contact" },
-  ]
+  ];
 
   return (
     <header className="bg-white shadow-sm border-b sticky top-0 z-50">
@@ -38,8 +49,12 @@ export default function Navigation() {
               <Car className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-gray-900 font-montserrat">A.M.O Distribution</h1>
-              <p className="text-sm text-gray-600">🇲🇺 #1 Spare Parts in Mauritius</p>
+              <h1 className="text-xl font-bold text-gray-900 font-montserrat">
+                A.M.O Distribution
+              </h1>
+              <p className="text-sm text-gray-600">
+                🇲🇺 #1 Spare Parts in Mauritius
+              </p>
             </div>
           </Link>
 
@@ -60,6 +75,47 @@ export default function Navigation() {
 
           {/* CTA Buttons */}
           <div className="hidden md:flex items-center space-x-3">
+            {/* Shopping Cart */}
+            <ShoppingCartComponent />
+
+            {/* Auth Buttons */}
+            {user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <User className="h-4 w-4 mr-2" />
+                    {user.name}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link href="/dashboard">Dashboard</Link>
+                  </DropdownMenuItem>
+                  {user.role === "admin" && (
+                    <DropdownMenuItem asChild>
+                      <Link href="/admin">Admin Panel</Link>
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={logout}>
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <div className="flex items-center space-x-2">
+                <Button variant="outline" size="sm" asChild>
+                  <Link href="/login">Login</Link>
+                </Button>
+                <Button size="sm" asChild>
+                  <Link href="/register">Register</Link>
+                </Button>
+              </div>
+            )}
+
             <Button
               variant="outline"
               className="border-[#D72638] text-[#D72638] hover:bg-[#D72638] hover:text-white"
@@ -68,17 +124,14 @@ export default function Navigation() {
               <Phone className="w-4 h-4 mr-2" />
               Call Now
             </Button>
-            <Button
-              className="bg-[#D72638] hover:bg-[#B91C2C] text-white font-semibold"
-              onClick={() => window.open("https://wa.me/23057123456?text=🚗 I need spare parts quote!", "_blank")}
-            >
-              <MessageCircle className="w-4 h-4 mr-2" />
-              WhatsApp Quote
-            </Button>
           </div>
 
           {/* Mobile Menu Button */}
-          <Button variant="ghost" className="lg:hidden" onClick={() => setIsOpen(!isOpen)}>
+          <Button
+            variant="ghost"
+            className="lg:hidden"
+            onClick={() => setIsOpen(!isOpen)}
+          >
             {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </Button>
         </div>
@@ -92,7 +145,9 @@ export default function Navigation() {
                   key={item.href}
                   href={item.href}
                   className={`text-lg font-medium transition-colors ${
-                    pathname === item.href ? "text-[#D72638] font-semibold" : "text-gray-700 hover:text-[#D72638]"
+                    pathname === item.href
+                      ? "text-[#D72638] font-semibold"
+                      : "text-gray-700 hover:text-[#D72638]"
                   }`}
                   onClick={() => setIsOpen(false)}
                 >
@@ -105,8 +160,11 @@ export default function Navigation() {
               <Button
                 className="w-full bg-[#D72638] hover:bg-[#B91C2C] text-white font-semibold"
                 onClick={() => {
-                  window.open("https://wa.me/23057123456?text=🚗 I need spare parts quote!", "_blank")
-                  setIsOpen(false)
+                  window.open(
+                    "https://wa.me/23057123456?text=🚗 I need spare parts quote!",
+                    "_blank"
+                  );
+                  setIsOpen(false);
                 }}
               >
                 <MessageCircle className="w-4 h-4 mr-2" />
@@ -116,16 +174,17 @@ export default function Navigation() {
                 variant="outline"
                 className="w-full border-[#D72638] text-[#D72638]"
                 onClick={() => {
-                  window.open("tel:+23057123456", "_self")
-                  setIsOpen(false)
+                  window.open("tel:+23057123456", "_self");
+                  setIsOpen(false);
                 }}
               >
-                <Phone className="w-4 h-4 mr-2" />📞 Call: 5712-3456
+                <Phone className="w-4 h-4 mr-2" />
+                📞 Call: 5712-3456
               </Button>
             </div>
           </div>
         )}
       </div>
     </header>
-  )
+  );
 }

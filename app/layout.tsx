@@ -1,22 +1,26 @@
-import type React from "react"
-import type { Metadata } from "next"
-import { Poppins, Montserrat } from "next/font/google"
-import "./globals.css"
+import type React from "react";
+import type { Metadata } from "next";
+import { Poppins, Montserrat } from "next/font/google";
+import "./globals.css";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { CartProvider } from "@/contexts/CartContext";
+import { Toaster } from "@/components/ui/sonner";
 
 const poppins = Poppins({
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700"],
   variable: "--font-poppins",
-})
+});
 
 const montserrat = Montserrat({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700", "800"],
   variable: "--font-montserrat",
-})
+});
 
 export const metadata: Metadata = {
-  title: "A.M.O Distribution Ltd - Premium Spare Parts | BMW, Audi, Mercedes & 4x4 Parts Mauritius",
+  title:
+    "A.M.O Distribution Ltd - Premium Spare Parts | BMW, Audi, Mercedes & 4x4 Parts Mauritius",
   description:
     "Leading spare parts distributor in Mauritius specializing in German cars (BMW, Audi, Mercedes) and 4x4 vehicles (Toyota Hilux, Ford Ranger, Navara). Genuine parts, fast delivery, competitive prices. Trusted by 500+ Mauritians since 2010.",
   keywords:
@@ -35,17 +39,24 @@ export const metadata: Metadata = {
     follow: true,
   },
   viewport: "width=device-width, initial-scale=1",
-    generator: 'v0.dev'
-}
+  generator: "v0.dev",
+};
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
   return (
     <html lang="en" className={`${poppins.variable} ${montserrat.variable}`}>
-      <body className={`${poppins.className} antialiased`}>{children}</body>
+      <body className={`${poppins.className} antialiased`}>
+        <AuthProvider>
+          <CartProvider>
+            {children}
+            <Toaster position="top-right" richColors />
+          </CartProvider>
+        </AuthProvider>
+      </body>
     </html>
-  )
+  );
 }

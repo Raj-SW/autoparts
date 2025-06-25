@@ -1,225 +1,672 @@
-"use client"
+"use client";
 
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { FileText, Download, Search, MessageCircle, Car, Truck, Star, Filter, ExternalLink } from "lucide-react"
-import Navigation from "../components/Navigation"
-import Footer from "../components/Footer"
+import React, { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
+import {
+  Search,
+  Filter,
+  Grid,
+  List,
+  ShoppingCart,
+  Heart,
+  Star,
+  Truck,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useCart } from "@/contexts/CartContext";
+import { apiClient } from "@/lib/api-client";
+import { toast } from "sonner";
+import Link from "next/link";
+import Navigation from "../components/Navigation";
+import Footer from "../components/Footer";
 
-const partsByBrand = {
-  bmw: [
-    { name: "Brake Pads (Front)", price: "Rs 2,500", compatibility: "3 Series, 5 Series, X3, X5", stock: "In Stock" },
-    { name: "Oil Filter", price: "Rs 850", compatibility: "All BMW Models", stock: "In Stock" },
-    { name: "Air Filter", price: "Rs 1,200", compatibility: "3 Series, 5 Series", stock: "In Stock" },
-    { name: "Brake Discs (Pair)", price: "Rs 4,800", compatibility: "X3, X5, X6", stock: "Limited" },
-    { name: "Spark Plugs (Set)", price: "Rs 1,600", compatibility: "All Petrol Models", stock: "In Stock" },
-    { name: "Cabin Filter", price: "Rs 950", compatibility: "3 Series, 5 Series, X3", stock: "In Stock" },
-  ],
-  mercedes: [
-    { name: "Brake Pads (Front)", price: "Rs 2,800", compatibility: "C-Class, E-Class", stock: "In Stock" },
-    { name: "Oil Filter", price: "Rs 900", compatibility: "All Mercedes Models", stock: "In Stock" },
-    { name: "Air Filter", price: "Rs 1,350", compatibility: "C-Class, E-Class, GLC", stock: "In Stock" },
-    { name: "Brake Discs (Pair)", price: "Rs 5,200", compatibility: "GLC, GLE, GLS", stock: "In Stock" },
-    { name: "Timing Belt", price: "Rs 2,400", compatibility: "C-Class, E-Class", stock: "Limited" },
-    { name: "Water Pump", price: "Rs 3,800", compatibility: "All Models", stock: "In Stock" },
-  ],
-  audi: [
-    { name: "Brake Pads (Front)", price: "Rs 2,600", compatibility: "A3, A4, Q3, Q5", stock: "In Stock" },
-    { name: "Oil Filter", price: "Rs 880", compatibility: "All Audi Models", stock: "In Stock" },
-    { name: "Air Filter", price: "Rs 1,250", compatibility: "A3, A4, A6", stock: "In Stock" },
-    { name: "Clutch Kit", price: "Rs 8,500", compatibility: "A3, A4 Manual", stock: "Limited" },
-    { name: "Fuel Filter", price: "Rs 1,100", compatibility: "All Diesel Models", stock: "In Stock" },
-    { name: "Suspension Strut", price: "Rs 4,200", compatibility: "Q3, Q5", stock: "In Stock" },
-  ],
-  hilux: [
-    { name: "Shock Absorbers", price: "Rs 3,200", compatibility: "Hilux 2015+", stock: "In Stock" },
-    { name: "Brake Pads (Front)", price: "Rs 1,800", compatibility: "All Hilux Models", stock: "In Stock" },
-    { name: "Oil Filter", price: "Rs 650", compatibility: "Hilux, Fortuner", stock: "In Stock" },
-    { name: "Clutch Kit", price: "Rs 8,500", compatibility: "Manual Transmission", stock: "In Stock" },
-    { name: "Timing Belt", price: "Rs 1,800", compatibility: "2.5L & 3.0L Engines", stock: "Limited" },
-    { name: "Air Filter", price: "Rs 850", compatibility: "All Hilux Models", stock: "In Stock" },
-  ],
-  ranger: [
-    { name: "Shock Absorbers", price: "Rs 3,400", compatibility: "Ranger 2012+", stock: "In Stock" },
-    { name: "Brake Pads (Front)", price: "Rs 1,900", compatibility: "All Ranger Models", stock: "In Stock" },
-    { name: "Oil Filter", price: "Rs 680", compatibility: "2.2L & 3.2L Engines", stock: "In Stock" },
-    { name: "Clutch Kit", price: "Rs 9,200", compatibility: "Manual Transmission", stock: "Limited" },
-    { name: "Fuel Filter", price: "Rs 950", compatibility: "All Diesel Models", stock: "In Stock" },
-    { name: "Radiator", price: "Rs 4,500", compatibility: "Ranger 2012+", stock: "In Stock" },
-  ],
-  navara: [
-    { name: "Shock Absorbers", price: "Rs 3,100", compatibility: "Navara D40, NP300", stock: "In Stock" },
-    { name: "Brake Pads (Front)", price: "Rs 1,750", compatibility: "All Navara Models", stock: "In Stock" },
-    { name: "Oil Filter", price: "Rs 620", compatibility: "2.5L Diesel Engine", stock: "In Stock" },
-    { name: "Clutch Kit", price: "Rs 8,800", compatibility: "Manual Transmission", stock: "In Stock" },
-    { name: "Air Filter", price: "Rs 800", compatibility: "All Navara Models", stock: "In Stock" },
-    { name: "Timing Chain Kit", price: "Rs 3,500", compatibility: "2.5L Engine", stock: "Limited" },
-  ],
+interface Part {
+  _id: string;
+  partNumber: string;
+  name: string;
+  description: string;
+  category: string;
+  vehicleMake: string;
+  vehicleModel: string;
+  price: number;
+  stock: number;
+  condition: string;
+  images: string[];
+  specifications: Record<string, any>;
+  warranty: string;
+  weight: number;
+}
+
+interface SearchFilters {
+  search: string;
+  vehicleMake: string;
+  category: string;
+  condition: string;
+  minPrice: string;
+  maxPrice: string;
+  inStock: boolean;
 }
 
 export default function CatalogPage() {
+  const searchParams = useSearchParams();
+  const { addItem, isInCart } = useCart();
+
+  const [parts, setParts] = useState<Part[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [showFilters, setShowFilters] = useState(false);
+  const [totalCount, setTotalCount] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [sortBy, setSortBy] = useState("name");
+
+  const [filters, setFilters] = useState<SearchFilters>({
+    search: searchParams.get("search") || "",
+    vehicleMake: "",
+    category: "",
+    condition: "",
+    minPrice: "",
+    maxPrice: "",
+    inStock: false,
+  });
+
+  const vehicleMakes = [
+    "BMW",
+    "Audi",
+    "Mercedes-Benz",
+    "Toyota",
+    "Ford",
+    "Nissan",
+    "Land Rover",
+    "Volkswagen",
+  ];
+  const categories = [
+    "Engine",
+    "Brake",
+    "Suspension",
+    "Electrical",
+    "Body",
+    "Transmission",
+    "Cooling",
+    "Exhaust",
+  ];
+  const conditions = ["New", "OEM", "Aftermarket", "Refurbished"];
+
+  useEffect(() => {
+    searchParts();
+  }, [filters, currentPage, sortBy]);
+
+  const searchParts = async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams();
+
+      if (filters.search) params.append("search", filters.search);
+      if (filters.vehicleMake)
+        params.append("vehicleMake", filters.vehicleMake);
+      if (filters.category) params.append("category", filters.category);
+      if (filters.condition) params.append("condition", filters.condition);
+      if (filters.minPrice) params.append("minPrice", filters.minPrice);
+      if (filters.maxPrice) params.append("maxPrice", filters.maxPrice);
+      if (filters.inStock) params.append("inStock", "true");
+
+      params.append("page", currentPage.toString());
+      params.append("limit", "12");
+      params.append("sortBy", sortBy);
+
+      const response = await apiClient(`/api/parts?${params}`);
+      const data = await response.json();
+
+      if (response.ok) {
+        setParts(data.parts || []);
+        setTotalCount(data.total || 0);
+      } else {
+        throw new Error(data.error || "Failed to search parts");
+      }
+    } catch (error) {
+      console.error("Search error:", error);
+      toast.error("Failed to search parts. Using demo data.");
+      // Use demo data if API fails
+      setDemoData();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const setDemoData = () => {
+    const demoPlarts: Part[] = [
+      {
+        _id: "1",
+        partNumber: "BRK001",
+        name: "Brake Pads - Front Set",
+        description:
+          "High-quality ceramic brake pads for optimal stopping power",
+        category: "Brake",
+        vehicleMake: "BMW",
+        vehicleModel: "3 Series",
+        price: 89.99,
+        stock: 15,
+        condition: "New",
+        images: ["/placeholder.jpg"],
+        specifications: {},
+        warranty: "12 months",
+        weight: 2.5,
+      },
+      {
+        _id: "2",
+        partNumber: "ENG002",
+        name: "Oil Filter",
+        description: "Premium oil filter for enhanced engine protection",
+        category: "Engine",
+        vehicleMake: "Audi",
+        vehicleModel: "A4",
+        price: 24.99,
+        stock: 30,
+        condition: "OEM",
+        images: ["/placeholder.jpg"],
+        specifications: {},
+        warranty: "6 months",
+        weight: 0.5,
+      },
+      {
+        _id: "3",
+        partNumber: "SUS003",
+        name: "Shock Absorber",
+        description: "Heavy-duty shock absorber for superior ride comfort",
+        category: "Suspension",
+        vehicleMake: "Mercedes-Benz",
+        vehicleModel: "C-Class",
+        price: 159.99,
+        stock: 8,
+        condition: "New",
+        images: ["/placeholder.jpg"],
+        specifications: {},
+        warranty: "24 months",
+        weight: 3.2,
+      },
+      {
+        _id: "4",
+        partNumber: "ELC004",
+        name: "Headlight Assembly",
+        description: "LED headlight assembly with auto-leveling",
+        category: "Electrical",
+        vehicleMake: "Toyota",
+        vehicleModel: "Hilux",
+        price: 299.99,
+        stock: 5,
+        condition: "New",
+        images: ["/placeholder.jpg"],
+        specifications: {},
+        warranty: "18 months",
+        weight: 4.1,
+      },
+    ];
+    setParts(demoPlarts);
+    setTotalCount(demoPlarts.length);
+  };
+
+  const handleAddToCart = (part: Part) => {
+    addItem({
+      id: part._id,
+      partNumber: part.partNumber,
+      name: part.name,
+      price: part.price,
+      stock: part.stock,
+      image: part.images[0],
+    });
+  };
+
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+    }).format(price);
+  };
+
+  const resetFilters = () => {
+    setFilters({
+      search: "",
+      vehicleMake: "",
+      category: "",
+      condition: "",
+      minPrice: "",
+      maxPrice: "",
+      inStock: false,
+    });
+    setCurrentPage(1);
+  };
+
+  const totalPages = Math.ceil(totalCount / 12);
+
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-gray-50">
       <Navigation />
 
       {/* Header */}
-      <section className="bg-gradient-to-br from-gray-50 to-gray-100 py-16">
-        <div className="container mx-auto px-4">
-          <div className="text-center max-w-3xl mx-auto">
-            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4 font-montserrat">Parts Catalog</h1>
-            <p className="text-xl text-gray-600 mb-8">
-              Browse our comprehensive collection of genuine spare parts for German cars and 4x4 vehicles
-            </p>
+      <div className="bg-white border-b">
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">
+                Parts Catalog
+              </h1>
+              <p className="text-gray-600 mt-1">
+                Genuine spare parts for premium vehicles
+              </p>
+            </div>
 
-            {/* Catalog Download Options */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="flex items-center gap-2">
               <Button
-                size="lg"
-                className="bg-[#D72638] hover:bg-[#B91C2C]"
-                onClick={() => window.open("/catalog-2024.pdf", "_blank")}
+                variant={viewMode === "grid" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setViewMode("grid")}
               >
-                <Download className="w-5 h-5 mr-2" />
-                Download PDF Catalog
+                <Grid className="h-4 w-4" />
               </Button>
               <Button
-                size="lg"
+                variant={viewMode === "list" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setViewMode("list")}
+              >
+                <List className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+
+          {/* Search and Filters */}
+          <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                <Input
+                  type="text"
+                  placeholder="Search by part number, name, or description..."
+                  value={filters.search}
+                  onChange={(e) =>
+                    setFilters({ ...filters, search: e.target.value })
+                  }
+                  className="pl-10"
+                />
+              </div>
+              <Button
                 variant="outline"
-                className="border-[#D72638] text-[#D72638] hover:bg-[#D72638] hover:text-white"
-                onClick={() => window.open("https://flipbook.example.com/amo-catalog", "_blank")}
+                onClick={() => setShowFilters(!showFilters)}
               >
-                <ExternalLink className="w-5 h-5 mr-2" />
-                Interactive Flipbook
+                <Filter className="h-4 w-4 mr-2" />
+                Filters
               </Button>
+              <Button onClick={searchParts}>Search</Button>
+            </div>
+
+            {/* Filter Panel */}
+            {showFilters && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    <span>Filters</span>
+                    <Button variant="ghost" size="sm" onClick={resetFilters}>
+                      Clear All
+                    </Button>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-2">
+                        Vehicle Make
+                      </label>
+                      <Select
+                        value={filters.vehicleMake}
+                        onValueChange={(value) =>
+                          setFilters({ ...filters, vehicleMake: value })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="All Makes" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">All Makes</SelectItem>
+                          {vehicleMakes.map((make) => (
+                            <SelectItem key={make} value={make}>
+                              {make}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-2">
+                        Category
+                      </label>
+                      <Select
+                        value={filters.category}
+                        onValueChange={(value) =>
+                          setFilters({ ...filters, category: value })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="All Categories" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">All Categories</SelectItem>
+                          {categories.map((category) => (
+                            <SelectItem key={category} value={category}>
+                              {category}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-2">
+                        Condition
+                      </label>
+                      <Select
+                        value={filters.condition}
+                        onValueChange={(value) =>
+                          setFilters({ ...filters, condition: value })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="All Conditions" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">All Conditions</SelectItem>
+                          {conditions.map((condition) => (
+                            <SelectItem key={condition} value={condition}>
+                              {condition}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-2">
+                        Min Price
+                      </label>
+                      <Input
+                        type="number"
+                        placeholder="$0"
+                        value={filters.minPrice}
+                        onChange={(e) =>
+                          setFilters({ ...filters, minPrice: e.target.value })
+                        }
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-2">
+                        Max Price
+                      </label>
+                      <Input
+                        type="number"
+                        placeholder="No limit"
+                        value={filters.maxPrice}
+                        onChange={(e) =>
+                          setFilters({ ...filters, maxPrice: e.target.value })
+                        }
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Results */}
+      <div className="container mx-auto px-4 py-8">
+        {/* Results Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+          <div>
+            <p className="text-gray-600">
+              {loading ? "Searching..." : `${totalCount} parts found`}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-600">Sort by:</span>
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="name">Name</SelectItem>
+                  <SelectItem value="price">Price</SelectItem>
+                  <SelectItem value="-price">Price (High to Low)</SelectItem>
+                  <SelectItem value="vehicleMake">Vehicle Make</SelectItem>
+                  <SelectItem value="category">Category</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </div>
-      </section>
 
-      {/* Search and Filter */}
-      <section className="py-8 bg-white border-b">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <Input placeholder="Search for parts..." className="pl-10" />
-            </div>
-            <Button variant="outline" className="flex items-center space-x-2">
-              <Filter className="w-4 h-4" />
-              <span>Filter by Stock</span>
-            </Button>
+        {/* Parts Grid/List */}
+        {loading ? (
+          <div
+            className={
+              viewMode === "grid"
+                ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+                : "space-y-4"
+            }
+          >
+            {[...Array(8)].map((_, i) => (
+              <div key={i} className="space-y-3">
+                <Skeleton className="h-48 w-full" />
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-4 w-1/2" />
+              </div>
+            ))}
           </div>
-        </div>
-      </section>
-
-      {/* Parts by Brand */}
-      <section className="py-16">
-        <div className="container mx-auto px-4">
-          <Tabs defaultValue="bmw" className="w-full">
-            <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6 mb-8">
-              <TabsTrigger value="bmw" className="flex items-center space-x-2">
-                <Car className="w-4 h-4" />
-                <span>BMW</span>
-              </TabsTrigger>
-              <TabsTrigger value="mercedes" className="flex items-center space-x-2">
-                <Star className="w-4 h-4" />
-                <span>Mercedes</span>
-              </TabsTrigger>
-              <TabsTrigger value="audi" className="flex items-center space-x-2">
-                <Car className="w-4 h-4" />
-                <span>Audi</span>
-              </TabsTrigger>
-              <TabsTrigger value="hilux" className="flex items-center space-x-2">
-                <Truck className="w-4 h-4" />
-                <span>Hilux</span>
-              </TabsTrigger>
-              <TabsTrigger value="ranger" className="flex items-center space-x-2">
-                <Truck className="w-4 h-4" />
-                <span>Ranger</span>
-              </TabsTrigger>
-              <TabsTrigger value="navara" className="flex items-center space-x-2">
-                <Truck className="w-4 h-4" />
-                <span>Navara</span>
-              </TabsTrigger>
-            </TabsList>
-
-            {Object.entries(partsByBrand).map(([brand, parts]) => (
-              <TabsContent key={brand} value={brand}>
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {parts.map((part, index) => (
-                    <Card key={index} className="hover:shadow-lg transition-shadow">
-                      <CardHeader>
-                        <div className="flex items-center justify-between">
-                          <CardTitle className="text-lg font-montserrat">{part.name}</CardTitle>
+        ) : parts.length > 0 ? (
+          <>
+            <div
+              className={
+                viewMode === "grid"
+                  ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+                  : "space-y-4"
+              }
+            >
+              {parts.map((part) => (
+                <Card
+                  key={part._id}
+                  className="overflow-hidden hover:shadow-lg transition-shadow"
+                >
+                  {viewMode === "grid" ? (
+                    <>
+                      <div className="relative">
+                        <img
+                          src={part.images[0] || "/placeholder.jpg"}
+                          alt={part.name}
+                          className="w-full h-48 object-cover"
+                        />
+                        <div className="absolute top-2 right-2 flex gap-2">
                           <Badge
-                            variant={part.stock === "In Stock" ? "default" : "secondary"}
-                            className={part.stock === "In Stock" ? "bg-green-100 text-green-800" : ""}
+                            variant={part.stock > 0 ? "default" : "destructive"}
                           >
-                            {part.stock}
+                            {part.stock > 0 ? "In Stock" : "Out of Stock"}
                           </Badge>
                         </div>
-                        <CardDescription>{part.compatibility}</CardDescription>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                        <div className="flex items-center justify-between">
-                          <span className="text-2xl font-bold text-[#D72638]">{part.price}</span>
+                      </div>
+                      <CardContent className="p-4">
+                        <div className="space-y-2">
+                          <div className="flex items-start justify-between">
+                            <h3 className="font-semibold text-sm leading-tight line-clamp-2">
+                              {part.name}
+                            </h3>
+                          </div>
+                          <p className="text-xs text-gray-600">
+                            #{part.partNumber}
+                          </p>
+                          <div className="flex items-center gap-2 text-xs text-gray-600">
+                            <span>{part.vehicleMake}</span>
+                            <span>•</span>
+                            <span>{part.category}</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-lg font-bold text-[#D72638]">
+                              {formatPrice(part.price)}
+                            </span>
+                            <Badge variant="outline" className="text-xs">
+                              {part.condition}
+                            </Badge>
+                          </div>
+                          <div className="flex gap-2 pt-2">
+                            <Button
+                              size="sm"
+                              onClick={() => handleAddToCart(part)}
+                              disabled={part.stock === 0 || isInCart(part._id)}
+                              className="flex-1"
+                            >
+                              <ShoppingCart className="h-3 w-3 mr-1" />
+                              {isInCart(part._id) ? "In Cart" : "Add to Cart"}
+                            </Button>
+                            <Button size="sm" variant="outline" asChild>
+                              <Link href={`/catalog/${part._id}`}>View</Link>
+                            </Button>
+                          </div>
                         </div>
-                        <Button
-                          className="w-full bg-[#D72638] hover:bg-[#B91C2C]"
-                          onClick={() =>
-                            window.open(
-                              `https://wa.me/23057123456?text=Hi! I need a quote for ${part.name} for ${brand.toUpperCase()}`,
-                              "_blank",
-                            )
-                          }
-                        >
-                          <MessageCircle className="w-4 h-4 mr-2" />
-                          Order on WhatsApp
-                        </Button>
                       </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </TabsContent>
-            ))}
-          </Tabs>
-        </div>
-      </section>
-
-      {/* Part Not Listed Section */}
-      <section className="py-16 bg-gray-50">
-        <div className="container mx-auto px-4">
-          <div className="max-w-2xl mx-auto text-center">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4 font-montserrat">Can't Find Your Part?</h2>
-            <p className="text-xl text-gray-600 mb-8">
-              We have access to thousands more parts. Send us your requirements and we'll source it for you.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button
-                size="lg"
-                className="bg-[#D72638] hover:bg-[#B91C2C]"
-                onClick={() =>
-                  window.open(
-                    "https://wa.me/23057123456?text=Hi! I'm looking for a part that's not in your catalog:%0A%0ACar: %0AYear: %0APart needed: %0AAdditional details: ",
-                    "_blank",
-                  )
-                }
-              >
-                <MessageCircle className="w-5 h-5 mr-2" />
-                Request Custom Part
-              </Button>
-              <Button size="lg" variant="outline" className="border-[#D72638] text-[#D72638]">
-                <FileText className="w-5 h-5 mr-2" />
-                Email Part Request
-              </Button>
+                    </>
+                  ) : (
+                    <CardContent className="p-4">
+                      <div className="flex gap-4">
+                        <img
+                          src={part.images[0] || "/placeholder.jpg"}
+                          alt={part.name}
+                          className="w-24 h-24 object-cover rounded"
+                        />
+                        <div className="flex-1 space-y-2">
+                          <div className="flex items-start justify-between">
+                            <h3 className="font-semibold">{part.name}</h3>
+                            <span className="text-lg font-bold text-[#D72638]">
+                              {formatPrice(part.price)}
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-600">
+                            #{part.partNumber}
+                          </p>
+                          <p className="text-sm text-gray-600 line-clamp-2">
+                            {part.description}
+                          </p>
+                          <div className="flex items-center gap-4 text-xs text-gray-600">
+                            <span>
+                              {part.vehicleMake} {part.vehicleModel}
+                            </span>
+                            <span>•</span>
+                            <span>{part.category}</span>
+                            <span>•</span>
+                            <Badge variant="outline" className="text-xs">
+                              {part.condition}
+                            </Badge>
+                            <span>•</span>
+                            <Badge
+                              variant={
+                                part.stock > 0 ? "default" : "destructive"
+                              }
+                              className="text-xs"
+                            >
+                              {part.stock > 0
+                                ? `${part.stock} in stock`
+                                : "Out of Stock"}
+                            </Badge>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              onClick={() => handleAddToCart(part)}
+                              disabled={part.stock === 0 || isInCart(part._id)}
+                            >
+                              <ShoppingCart className="h-3 w-3 mr-1" />
+                              {isInCart(part._id) ? "In Cart" : "Add to Cart"}
+                            </Button>
+                            <Button size="sm" variant="outline" asChild>
+                              <Link href={`/catalog/${part._id}`}>
+                                View Details
+                              </Link>
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  )}
+                </Card>
+              ))}
             </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-2 mt-8">
+                <Button
+                  variant="outline"
+                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                  disabled={currentPage === 1}
+                >
+                  Previous
+                </Button>
+
+                <div className="flex items-center gap-1">
+                  {[...Array(Math.min(5, totalPages))].map((_, i) => {
+                    const page = i + 1;
+                    return (
+                      <Button
+                        key={page}
+                        variant={currentPage === page ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setCurrentPage(page)}
+                      >
+                        {page}
+                      </Button>
+                    );
+                  })}
+                </div>
+
+                <Button
+                  variant="outline"
+                  onClick={() =>
+                    setCurrentPage(Math.min(totalPages, currentPage + 1))
+                  }
+                  disabled={currentPage === totalPages}
+                >
+                  Next
+                </Button>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="text-center py-16">
+            <div className="mb-4">
+              <Search className="h-16 w-16 text-gray-300 mx-auto" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              No parts found
+            </h3>
+            <p className="text-gray-600 mb-4">
+              Try adjusting your search criteria or browse by category
+            </p>
+            <Button onClick={resetFilters}>Clear Filters</Button>
           </div>
-        </div>
-      </section>
+        )}
+      </div>
 
       <Footer />
     </div>
-  )
+  );
 }
