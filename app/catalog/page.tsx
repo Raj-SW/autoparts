@@ -2,16 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
-import {
-  Search,
-  Filter,
-  Grid,
-  List,
-  ShoppingCart,
-  Heart,
-  Star,
-  Truck,
-} from "lucide-react";
+import { Search, Filter, Grid, List, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -23,7 +14,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCart } from "@/contexts/CartContext";
 import { apiClient } from "@/lib/api-client";
@@ -31,22 +21,12 @@ import { toast } from "sonner";
 import Link from "next/link";
 import Navigation from "../components/Navigation";
 import Footer from "../components/Footer";
+import { IPart } from "@/models/Part";
 
-interface Part {
+// For backward compatibility in components that expect certain fields
+interface Part extends Omit<IPart, "_id" | "images"> {
   _id: string;
-  partNumber: string;
-  name: string;
-  description: string;
-  category: string;
-  vehicleMake: string;
-  vehicleModel: string;
-  price: number;
-  stock: number;
-  condition: string;
-  images: string[];
-  specifications: Record<string, any>;
-  warranty: string;
-  weight: number;
+  images: string[]; // Simplified for display purposes
 }
 
 interface SearchFilters {
@@ -110,30 +90,24 @@ export default function CatalogPage() {
   const searchParts = async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams();
+      const params: any = {};
 
-      if (filters.search) params.append("search", filters.search);
-      if (filters.vehicleMake)
-        params.append("vehicleMake", filters.vehicleMake);
-      if (filters.category) params.append("category", filters.category);
-      if (filters.condition) params.append("condition", filters.condition);
-      if (filters.minPrice) params.append("minPrice", filters.minPrice);
-      if (filters.maxPrice) params.append("maxPrice", filters.maxPrice);
-      if (filters.inStock) params.append("inStock", "true");
+      if (filters.search) params.search = filters.search;
+      if (filters.vehicleMake) params.vehicleMake = filters.vehicleMake;
+      if (filters.category) params.category = filters.category;
+      if (filters.condition) params.condition = filters.condition;
+      if (filters.minPrice) params.minPrice = filters.minPrice;
+      if (filters.maxPrice) params.maxPrice = filters.maxPrice;
+      if (filters.inStock) params.inStock = "true";
 
-      params.append("page", currentPage.toString());
-      params.append("limit", "12");
-      params.append("sortBy", sortBy);
+      params.page = currentPage.toString();
+      params.limit = "12";
+      params.sortBy = sortBy;
 
-      const response = await apiClient(`/api/parts?${params}`);
-      const data = await response.json();
+      const data = await apiClient.getParts(params);
 
-      if (response.ok) {
-        setParts(data.parts || []);
-        setTotalCount(data.total || 0);
-      } else {
-        throw new Error(data.error || "Failed to search parts");
-      }
+      setParts(data.parts || []);
+      setTotalCount(data.total || 0);
     } catch (error) {
       console.error("Search error:", error);
       toast.error("Failed to search parts. Please try again.");
@@ -421,7 +395,7 @@ export default function CatalogPage() {
                     <>
                       <div className="relative">
                         <img
-                          src={part.images[0] || "/placeholder.jpg"}
+                          src={part.images[0].url}
                           alt={part.name}
                           className="w-full h-48 object-cover"
                         />
@@ -444,7 +418,7 @@ export default function CatalogPage() {
                             #{part.partNumber}
                           </p>
                           <div className="flex items-center gap-2 text-xs text-gray-600">
-                            <span>{part.vehicleMake}</span>
+                            <span>{part.brand}</span>
                             <span>•</span>
                             <span>{part.category}</span>
                           </div>
@@ -453,7 +427,7 @@ export default function CatalogPage() {
                               {formatPrice(part.price)}
                             </span>
                             <Badge variant="outline" className="text-xs">
-                              {part.condition}
+                              {part.specifications?.condition || "New"}
                             </Badge>
                           </div>
                           <div className="flex gap-2 pt-2">
@@ -496,13 +470,13 @@ export default function CatalogPage() {
                           </p>
                           <div className="flex items-center gap-4 text-xs text-gray-600">
                             <span>
-                              {part.vehicleMake} {part.vehicleModel}
+                              {part.brand} {part.compatibility?.make?.[0] || ""}
                             </span>
                             <span>•</span>
                             <span>{part.category}</span>
                             <span>•</span>
                             <Badge variant="outline" className="text-xs">
-                              {part.condition}
+                              {part.specifications?.condition || "New"}
                             </Badge>
                             <span>•</span>
                             <Badge

@@ -26,17 +26,19 @@ import Link from "next/link";
 import Navigation from "../../components/Navigation";
 import Footer from "../../components/Footer";
 
+// Backward compatible interface - will gradually transition to use centralized IPart model
 interface Part {
   _id: string;
   partNumber: string;
   name: string;
   description: string;
   category: string;
-  vehicleMake: string;
-  vehicleModel: string;
+  brand: string;
+  vehicleMake: string; // Legacy field for compatibility
+  vehicleModel: string; // Legacy field for compatibility
   price: number;
   stock: number;
-  condition: string;
+  condition: string; // Legacy field for compatibility
   images: {
     url: string;
     publicId: string;
@@ -44,8 +46,11 @@ interface Part {
     height?: number;
   }[];
   specifications: Record<string, any>;
-  warranty: string;
-  weight: number;
+  warranty: string; // Legacy field for compatibility
+  weight: number; // Legacy field for compatibility
+  compatibility: Record<string, any>;
+  averageRating: number;
+  reviewCount: number;
 }
 
 export default function PartDetailPage() {
@@ -68,7 +73,7 @@ export default function PartDetailPage() {
   const fetchPart = async (id: string) => {
     setLoading(true);
     try {
-      const data = await apiClient.getPartById(id);
+      const data = await apiClient.getPart(id);
       setPart(data);
     } catch (error) {
       console.error("Fetch part error:", error);
@@ -89,7 +94,7 @@ export default function PartDetailPage() {
         name: part.name,
         price: part.price,
         stock: part.stock,
-        image: part.images[0],
+        image: part.images[0]?.url || "/placeholder.jpg",
       });
     }
   };

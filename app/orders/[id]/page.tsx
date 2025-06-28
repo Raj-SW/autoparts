@@ -86,14 +86,8 @@ export default function OrderDetailPage() {
   const fetchOrder = async () => {
     setLoading(true);
     try {
-      const response = await apiClient(`/api/orders/${id}`);
-      const data = await response.json();
-
-      if (response.ok) {
-        setOrder(data);
-      } else {
-        throw new Error(data.error || "Failed to fetch order");
-      }
+      const data = await apiClient.request(`/api/orders/${id}`);
+      setOrder(data);
     } catch (error) {
       console.error("Order fetch error:", error);
       toast.error("Failed to load order details");

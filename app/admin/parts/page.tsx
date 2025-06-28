@@ -68,36 +68,11 @@ import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import Navigation from "../../components/Navigation";
 import Footer from "../../components/Footer";
+import { IPart } from "@/models/Part";
 
-interface Part {
+// Use the centralized Part model with string dates for compatibility
+interface Part extends Omit<IPart, "_id" | "createdAt" | "updatedAt"> {
   _id: string;
-  partNumber: string;
-  name: string;
-  description: string;
-  category: string;
-  brand: string;
-  price: number;
-  salePrice?: number;
-  costPrice: number;
-  stock: number;
-  sku: string;
-  compatibility: {
-    make: string[];
-    model: string[];
-    year: number[];
-  };
-  specifications: {
-    condition: "new" | "used" | "refurbished";
-    weight?: number;
-    warranty?: string;
-  };
-  images: {
-    url: string;
-    publicId: string;
-    width?: number;
-    height?: number;
-  }[];
-  tags: string[];
   createdAt: string;
   updatedAt: string;
 }

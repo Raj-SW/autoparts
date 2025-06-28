@@ -10,17 +10,11 @@ export interface IPart {
   brand: string;
   manufacturer?: string;
 
-  // Vehicle compatibility
-  compatibility: {
-    make: string[];
-    model: string[];
-    year: number[];
-    engine?: string[];
-  };
+  // Compatibility object (replaces individual vehicle fields)
+  compatibility: Record<string, any>;
 
   // Pricing
   price: number;
-  salePrice?: number;
   costPrice: number;
   currency: string;
 
@@ -30,29 +24,16 @@ export interface IPart {
   sku: string;
   location?: string;
 
-  // Images and media
+  // Images array with objects containing url, publicId, width, height
   images: {
     url: string;
     publicId: string;
-    width?: number;
-    height?: number;
+    width: number;
+    height: number;
   }[];
-  thumbnailImage?: string;
-  technicalDiagram?: string;
 
-  // Specifications
-  specifications: {
-    weight?: number;
-    dimensions?: {
-      length?: number;
-      width?: number;
-      height?: number;
-    };
-    material?: string;
-    color?: string;
-    warranty?: string;
-    condition: "new" | "used" | "refurbished";
-  };
+  // Specifications as generic object
+  specifications: Record<string, any>;
 
   // SEO and search
   tags: string[];
@@ -63,14 +44,14 @@ export interface IPart {
   isFeatured: boolean;
 
   // Ratings and reviews
-  averageRating?: number;
-  reviewCount?: number;
+  averageRating: number;
+  reviewCount: number;
 
   // Metadata
   createdAt: Date;
   updatedAt: Date;
-  createdBy?: ObjectId;
-  lastModifiedBy?: ObjectId;
+  createdBy: ObjectId;
+  lastModifiedBy: ObjectId;
 }
 
 export const PartSchema = {
@@ -82,15 +63,9 @@ export const PartSchema = {
   brand: { type: "string", required: true },
   manufacturer: { type: "string" },
 
-  compatibility: {
-    make: { type: "array" },
-    model: { type: "array" },
-    year: { type: "array" },
-    engine: { type: "array" },
-  },
+  compatibility: { type: "object" },
 
   price: { type: "number", required: true },
-  salePrice: { type: "number" },
   costPrice: { type: "number", required: true },
   currency: { type: "string", default: "USD" },
 
@@ -100,25 +75,8 @@ export const PartSchema = {
   location: { type: "string" },
 
   images: { type: "array", default: [] },
-  thumbnailImage: { type: "string" },
-  technicalDiagram: { type: "string" },
 
-  specifications: {
-    weight: { type: "number" },
-    dimensions: {
-      length: { type: "number" },
-      width: { type: "number" },
-      height: { type: "number" },
-    },
-    material: { type: "string" },
-    color: { type: "string" },
-    warranty: { type: "string" },
-    condition: {
-      type: "string",
-      enum: ["new", "used", "refurbished"],
-      default: "new",
-    },
-  },
+  specifications: { type: "object" },
 
   tags: { type: "array", default: [] },
   searchKeywords: { type: "array", default: [] },

@@ -70,15 +70,9 @@ export default function OrdersPage() {
       params.append("limit", "10");
       if (statusFilter) params.append("status", statusFilter);
 
-      const response = await apiClient(`/api/orders?${params}`);
-      const data = await response.json();
-
-      if (response.ok) {
-        setOrders(data.orders);
-        setTotalPages(data.pagination.pages);
-      } else {
-        throw new Error(data.error || "Failed to fetch orders");
-      }
+      const data = await apiClient.request(`/api/orders?${params}`);
+      setOrders(data.orders);
+      setTotalPages(data.pagination.pages);
     } catch (error) {
       console.error("Orders fetch error:", error);
       toast.error("Failed to load orders");
