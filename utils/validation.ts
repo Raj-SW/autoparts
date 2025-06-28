@@ -52,7 +52,16 @@ export const createPartSchema = z.object({
   costPrice: z.number().positive("Cost price must be positive"),
   stock: z.number().int().min(0, "Stock cannot be negative"),
   sku: z.string().min(1, "SKU is required"),
-  images: z.array(z.string()).optional(),
+  images: z
+    .array(
+      z.object({
+        url: z.string().url("Invalid image URL"),
+        publicId: z.string().min(1, "Public ID is required"),
+        width: z.number().int().positive().optional(),
+        height: z.number().int().positive().optional(),
+      })
+    )
+    .optional(),
   specifications: z
     .object({
       weight: z.number().positive().optional(),

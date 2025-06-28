@@ -37,7 +37,12 @@ interface Part {
   price: number;
   stock: number;
   condition: string;
-  images: string[];
+  images: {
+    url: string;
+    publicId: string;
+    width?: number;
+    height?: number;
+  }[];
   specifications: Record<string, any>;
   warranty: string;
   weight: number;
@@ -63,14 +68,8 @@ export default function PartDetailPage() {
   const fetchPart = async (id: string) => {
     setLoading(true);
     try {
-      const response = await apiClient(`/api/parts/${id}`);
-      const data = await response.json();
-
-      if (response.ok) {
-        setPart(data);
-      } else {
-        throw new Error(data.error || "Failed to fetch part");
-      }
+      const data = await apiClient.getPartById(id);
+      setPart(data);
     } catch (error) {
       console.error("Fetch part error:", error);
       toast.error("Failed to load part details. Please try again.");
@@ -204,7 +203,7 @@ export default function PartDetailPage() {
           <div className="space-y-4">
             <div className="relative">
               <img
-                src={part.images[selectedImage] || "/placeholder.jpg"}
+                src={part.images[selectedImage]?.url || "/placeholder.jpg"}
                 alt={part.name}
                 className="w-full h-96 object-cover rounded-lg bg-white border"
               />
@@ -231,7 +230,7 @@ export default function PartDetailPage() {
                     }`}
                   >
                     <img
-                      src={image || "/placeholder.jpg"}
+                      src={image.url || "/placeholder.jpg"}
                       alt={`${part.name} ${index + 1}`}
                       className="w-full h-full object-cover"
                     />

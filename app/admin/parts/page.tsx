@@ -46,6 +46,8 @@ import {
   ArrowUpDown,
   Upload,
   Download,
+  Image,
+  X,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -89,7 +91,12 @@ interface Part {
     weight?: number;
     warranty?: string;
   };
-  images: string[];
+  images: {
+    url: string;
+    publicId: string;
+    width?: number;
+    height?: number;
+  }[];
   tags: string[];
   createdAt: string;
   updatedAt: string;
@@ -100,12 +107,16 @@ interface PartFormData {
   name: string;
   description: string;
   category: string;
+  subcategory?: string;
   brand: string;
+  manufacturer?: string;
   price: number;
   salePrice?: number;
   costPrice: number;
   stock: number;
+  lowStockThreshold?: number;
   sku: string;
+  location?: string;
   compatibility: {
     make: string[];
     model: string[];
@@ -116,6 +127,12 @@ interface PartFormData {
     weight?: number;
     warranty?: string;
   };
+  images: {
+    url: string;
+    publicId: string;
+    width?: number;
+    height?: number;
+  }[];
   tags: string[];
 }
 
@@ -125,9 +142,9 @@ export default function AdminPartsPage() {
   const [parts, setParts] = useState<Part[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("");
-  const [brandFilter, setBrandFilter] = useState("");
-  const [stockFilter, setStockFilter] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [brandFilter, setBrandFilter] = useState("all");
+  const [stockFilter, setStockFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -138,12 +155,16 @@ export default function AdminPartsPage() {
     name: "",
     description: "",
     category: "",
+    subcategory: "",
     brand: "",
+    manufacturer: "",
     price: 0,
     salePrice: undefined,
     costPrice: 0,
     stock: 0,
+    lowStockThreshold: 10,
     sku: "",
+    location: "",
     compatibility: {
       make: [],
       model: [],
@@ -154,6 +175,7 @@ export default function AdminPartsPage() {
       weight: undefined,
       warranty: "",
     },
+    images: [],
     tags: [],
   });
 
@@ -169,7 +191,7 @@ export default function AdminPartsPage() {
     if (user && user.role === "admin") {
       fetchParts();
     }
-  }, [user, currentPage, categoryFilter, brandFilter, stockFilter]);
+  }, [user, currentPage, categoryFilter, brandFilter, stockFilter]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchParts = async () => {
     setLoading(true);
@@ -177,17 +199,20 @@ export default function AdminPartsPage() {
       const data = await apiClient.getParts({
         page: currentPage,
         limit: 20,
-        ...(categoryFilter && { category: categoryFilter }),
-        ...(brandFilter && { brand: brandFilter }),
-        ...(stockFilter && { stockLevel: stockFilter }),
+        ...(categoryFilter &&
+          categoryFilter !== "all" && { category: categoryFilter }),
+        ...(brandFilter && brandFilter !== "all" && { brand: brandFilter }),
+        ...(stockFilter &&
+          stockFilter !== "all" && { stockLevel: stockFilter }),
       });
 
-      setParts(data.parts);
-      setTotalPages(Math.ceil(data.totalCount / 20));
+      setParts(data.parts || []);
+      setTotalPages(Math.ceil((data.totalCount || 0) / 20));
     } catch (error) {
       console.error("Parts fetch error:", error);
       toast.error("Failed to load parts");
       setParts([]);
+      setTotalPages(1);
     } finally {
       setLoading(false);
     }
@@ -238,12 +263,16 @@ export default function AdminPartsPage() {
       name: "",
       description: "",
       category: "",
+      subcategory: "",
       brand: "",
+      manufacturer: "",
       price: 0,
       salePrice: undefined,
       costPrice: 0,
       stock: 0,
+      lowStockThreshold: 10,
       sku: "",
+      location: "",
       compatibility: {
         make: [],
         model: [],
@@ -254,6 +283,7 @@ export default function AdminPartsPage() {
         weight: undefined,
         warranty: "",
       },
+      images: [],
       tags: [],
     });
   };
@@ -265,14 +295,19 @@ export default function AdminPartsPage() {
       name: part.name,
       description: part.description,
       category: part.category,
+      subcategory: (part as any).subcategory || "",
       brand: part.brand,
+      manufacturer: (part as any).manufacturer || "",
       price: part.price,
       salePrice: part.salePrice,
       costPrice: part.costPrice,
       stock: part.stock,
+      lowStockThreshold: (part as any).lowStockThreshold || 10,
       sku: part.sku,
+      location: (part as any).location || "",
       compatibility: part.compatibility,
       specifications: part.specifications,
+      images: part.images || [],
       tags: part.tags,
     });
     setIsEditDialogOpen(true);
@@ -293,13 +328,25 @@ export default function AdminPartsPage() {
     return { label: "In Stock", color: "bg-green-100 text-green-800" };
   };
 
-  const filteredParts = parts.filter(
-    (part) =>
-      part.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      part.partNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      part.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      part.brand.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredParts =
+    parts?.filter(
+      (part) =>
+        part.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        part.partNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        part.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        part.brand.toLowerCase().includes(searchTerm.toLowerCase())
+    ) || [];
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!user || user.role !== "admin") {
     return (
@@ -313,10 +360,8 @@ export default function AdminPartsPage() {
             <p className="text-gray-600 mb-6">
               You need admin privileges to access this page.
             </p>
-            <Button asChild>
-              <span onClick={() => router.push("/dashboard")}>
-                Go to Dashboard
-              </span>
+            <Button onClick={() => router.push("/dashboard")}>
+              Go to Dashboard
             </Button>
           </div>
         </div>
@@ -395,7 +440,7 @@ export default function AdminPartsPage() {
                   <SelectValue placeholder="Filter by category" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Categories</SelectItem>
+                  <SelectItem value="all">All Categories</SelectItem>
                   <SelectItem value="Brakes">Brakes</SelectItem>
                   <SelectItem value="Engine">Engine</SelectItem>
                   <SelectItem value="Suspension">Suspension</SelectItem>
@@ -410,7 +455,7 @@ export default function AdminPartsPage() {
                   <SelectValue placeholder="Filter by brand" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Brands</SelectItem>
+                  <SelectItem value="all">All Brands</SelectItem>
                   <SelectItem value="Brembo">Brembo</SelectItem>
                   <SelectItem value="Bosch">Bosch</SelectItem>
                   <SelectItem value="Monroe">Monroe</SelectItem>
@@ -425,7 +470,7 @@ export default function AdminPartsPage() {
                   <SelectValue placeholder="Filter by stock" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Stock Levels</SelectItem>
+                  <SelectItem value="all">All Stock Levels</SelectItem>
                   <SelectItem value="in-stock">In Stock</SelectItem>
                   <SelectItem value="low-stock">Low Stock</SelectItem>
                   <SelectItem value="out-of-stock">Out of Stock</SelectItem>
@@ -457,7 +502,7 @@ export default function AdminPartsPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Part Info</TableHead>
+                      <TableHead>Part Info & Images</TableHead>
                       <TableHead>Category</TableHead>
                       <TableHead>Brand</TableHead>
                       <TableHead>Price</TableHead>
@@ -473,7 +518,16 @@ export default function AdminPartsPage() {
                         <TableRow key={part._id}>
                           <TableCell>
                             <div>
-                              <div className="font-semibold">{part.name}</div>
+                              <div className="font-semibold flex items-center gap-2">
+                                {part.name}
+                                {part.images && part.images.length > 0 && (
+                                  <span
+                                    title={`${part.images.length} image(s)`}
+                                  >
+                                    <Image className="h-4 w-4 text-blue-500" />
+                                  </span>
+                                )}
+                              </div>
                               <div className="text-sm text-gray-600">
                                 #{part.partNumber} • SKU: {part.sku}
                               </div>
@@ -577,9 +631,9 @@ export default function AdminPartsPage() {
                     <Package className="h-12 w-12 text-gray-300 mx-auto mb-4" />
                     <p className="text-gray-600">
                       {searchTerm ||
-                      categoryFilter ||
-                      brandFilter ||
-                      stockFilter
+                      (categoryFilter && categoryFilter !== "all") ||
+                      (brandFilter && brandFilter !== "all") ||
+                      (stockFilter && stockFilter !== "all")
                         ? "No parts match your filters."
                         : "No parts found. Add your first part to get started."}
                     </p>
@@ -764,6 +818,38 @@ function PartForm({
             />
           </div>
         </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="subcategory">Subcategory</Label>
+            <Input
+              id="subcategory"
+              value={formData.subcategory || ""}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  subcategory: e.target.value,
+                }))
+              }
+              placeholder="e.g., Disc Brakes, Spark Plugs"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="manufacturer">Manufacturer</Label>
+            <Input
+              id="manufacturer"
+              value={formData.manufacturer || ""}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  manufacturer: e.target.value,
+                }))
+              }
+              placeholder="e.g., OEM manufacturer name"
+            />
+          </div>
+        </div>
       </div>
 
       {/* Pricing & Inventory */}
@@ -824,20 +910,50 @@ function PartForm({
           </div>
         </div>
 
-        <div>
-          <Label htmlFor="stock">Stock Quantity *</Label>
-          <Input
-            id="stock"
-            type="number"
-            value={formData.stock}
-            onChange={(e) =>
-              setFormData((prev) => ({
-                ...prev,
-                stock: parseInt(e.target.value) || 0,
-              }))
-            }
-            required
-          />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <Label htmlFor="stock">Stock Quantity *</Label>
+            <Input
+              id="stock"
+              type="number"
+              value={formData.stock}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  stock: parseInt(e.target.value) || 0,
+                }))
+              }
+              required
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="lowStockThreshold">Low Stock Threshold</Label>
+            <Input
+              id="lowStockThreshold"
+              type="number"
+              value={formData.lowStockThreshold || 10}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  lowStockThreshold: parseInt(e.target.value) || 10,
+                }))
+              }
+              placeholder="10"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="location">Storage Location</Label>
+            <Input
+              id="location"
+              value={formData.location || ""}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, location: e.target.value }))
+              }
+              placeholder="e.g., Warehouse A, Shelf B2"
+            />
+          </div>
         </div>
       </div>
 
@@ -909,6 +1025,116 @@ function PartForm({
         </div>
       </div>
 
+      {/* Vehicle Compatibility */}
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold">Vehicle Compatibility</h3>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <Label htmlFor="make">Make</Label>
+            <Input
+              id="make"
+              value={formData.compatibility.make.join(", ")}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  compatibility: {
+                    ...prev.compatibility,
+                    make: e.target.value
+                      .split(",")
+                      .map((s) => s.trim())
+                      .filter((s) => s),
+                  },
+                }))
+              }
+              placeholder="e.g., Toyota, Honda, Ford"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Separate multiple makes with commas
+            </p>
+          </div>
+
+          <div>
+            <Label htmlFor="model">Model</Label>
+            <Input
+              id="model"
+              value={formData.compatibility.model.join(", ")}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  compatibility: {
+                    ...prev.compatibility,
+                    model: e.target.value
+                      .split(",")
+                      .map((s) => s.trim())
+                      .filter((s) => s),
+                  },
+                }))
+              }
+              placeholder="e.g., Camry, Accord, F-150"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Separate multiple models with commas
+            </p>
+          </div>
+
+          <div>
+            <Label htmlFor="year">Year</Label>
+            <Input
+              id="year"
+              value={formData.compatibility.year.join(", ")}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  compatibility: {
+                    ...prev.compatibility,
+                    year: e.target.value
+                      .split(",")
+                      .map((s) => s.trim())
+                      .filter((s) => s)
+                      .map((s) => parseInt(s))
+                      .filter((n) => !isNaN(n)),
+                  },
+                }))
+              }
+              placeholder="e.g., 2015, 2016, 2017"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Separate multiple years with commas
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Tags and Keywords */}
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold">Tags & Keywords</h3>
+
+        <div>
+          <Label htmlFor="tags">Tags</Label>
+          <Input
+            id="tags"
+            value={formData.tags.join(", ")}
+            onChange={(e) =>
+              setFormData((prev) => ({
+                ...prev,
+                tags: e.target.value
+                  .split(",")
+                  .map((s) => s.trim())
+                  .filter((s) => s),
+              }))
+            }
+            placeholder="e.g., brake pad, ceramic, performance"
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            Separate multiple tags with commas
+          </p>
+        </div>
+      </div>
+
+      {/* Images */}
+      <CloudinaryImageUpload formData={formData} setFormData={setFormData} />
+
       {/* Action Buttons */}
       <div className="flex justify-end space-x-3 pt-4">
         <Button type="button" variant="outline" onClick={onCancel}>
@@ -919,5 +1145,298 @@ function PartForm({
         </Button>
       </div>
     </form>
+  );
+}
+
+// Cloudinary Image Upload Component
+function CloudinaryImageUpload({
+  formData,
+  setFormData,
+}: {
+  formData: PartFormData;
+  setFormData: React.Dispatch<React.SetStateAction<PartFormData>>;
+}) {
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<{
+    [key: string]: number;
+  }>({});
+
+  const uploadToCloudinary = async (
+    file: File
+  ): Promise<{
+    url: string;
+    publicId: string;
+    width?: number;
+    height?: number;
+  }> => {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    // Get the authentication token from localStorage
+    const token = localStorage.getItem("accessToken");
+    if (!token) {
+      throw new Error("Authentication token not found. Please log in again.");
+    }
+
+    const response = await fetch("/api/upload", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || "Failed to upload image");
+    }
+
+    const result = await response.json();
+    return {
+      url: result.url,
+      publicId: result.publicId,
+      width: result.width,
+      height: result.height,
+    };
+  };
+
+  const handleFileUpload = async (files: FileList) => {
+    if (files.length === 0) return;
+
+    setUploading(true);
+    const uploadPromises = Array.from(files).map(async (file, index) => {
+      try {
+        const fileKey = `${file.name}-${index}`;
+        setUploadProgress((prev) => ({ ...prev, [fileKey]: 0 }));
+
+        // Simulate progress (since we don't have real progress from fetch)
+        const progressInterval = setInterval(() => {
+          setUploadProgress((prev) => ({
+            ...prev,
+            [fileKey]: Math.min((prev[fileKey] || 0) + 10, 90),
+          }));
+        }, 200);
+
+        const result = await uploadToCloudinary(file);
+
+        clearInterval(progressInterval);
+        setUploadProgress((prev) => ({ ...prev, [fileKey]: 100 }));
+
+        return result;
+      } catch (error) {
+        console.error("Upload failed:", error);
+        toast.error(
+          `Failed to upload ${file.name}: ${
+            error instanceof Error ? error.message : "Unknown error"
+          }`
+        );
+        return null;
+      }
+    });
+
+    try {
+      const results = await Promise.all(uploadPromises);
+      const successfulUploads = results.filter(
+        (result): result is NonNullable<typeof result> => result !== null
+      );
+
+      if (successfulUploads.length > 0) {
+        setFormData((prev) => ({
+          ...prev,
+          images: [...prev.images, ...successfulUploads],
+        }));
+        toast.success(
+          `Successfully uploaded ${successfulUploads.length} image(s)`
+        );
+      }
+    } catch (error) {
+      console.error("Batch upload failed:", error);
+      toast.error("Some uploads failed");
+    } finally {
+      setUploading(false);
+      setUploadProgress({});
+    }
+  };
+
+  const handleUrlAdd = (url: string) => {
+    if (!url.trim()) return;
+
+    // Basic URL validation
+    try {
+      new URL(url);
+    } catch {
+      toast.error("Please enter a valid URL");
+      return;
+    }
+
+    setFormData((prev) => ({
+      ...prev,
+      images: [...prev.images, { url: url.trim(), publicId: "" }],
+    }));
+  };
+
+  const handleImageDelete = async (index: number) => {
+    const image = formData.images[index];
+
+    // If it's a Cloudinary image (has publicId), delete from Cloudinary
+    if (image.publicId) {
+      try {
+        // Get the authentication token from localStorage
+        const token = localStorage.getItem("accessToken");
+        if (!token) {
+          toast.error("Authentication token not found. Please log in again.");
+          return;
+        }
+
+        const response = await fetch(`/api/upload?publicId=${image.publicId}`, {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          console.error("Failed to delete from Cloudinary:", error);
+          toast.error("Failed to delete image from cloud storage");
+          return;
+        }
+      } catch (error) {
+        console.error("Delete request failed:", error);
+        toast.error("Failed to delete image");
+        return;
+      }
+    }
+
+    // Remove from form data
+    setFormData((prev) => ({
+      ...prev,
+      images: prev.images.filter((_, i) => i !== index),
+    }));
+
+    toast.success("Image deleted successfully");
+  };
+
+  return (
+    <div className="space-y-4">
+      <h3 className="text-lg font-semibold">Product Images</h3>
+
+      {/* Display existing images */}
+      {formData.images.length > 0 && (
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {formData.images.map((image, index) => (
+            <div key={index} className="relative group">
+              <img
+                src={image.url}
+                alt={`Product ${index + 1}`}
+                className="w-full h-24 object-cover rounded-lg border"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = "/placeholder.jpg";
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => handleImageDelete(index)}
+                disabled={uploading}
+                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50"
+              >
+                <X className="h-3 w-3" />
+              </button>
+              {image.publicId && (
+                <div className="absolute bottom-1 left-1 bg-green-500 text-white text-xs px-1 rounded">
+                  Cloud
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Upload progress */}
+      {Object.keys(uploadProgress).length > 0 && (
+        <div className="space-y-2">
+          {Object.entries(uploadProgress).map(([fileKey, progress]) => (
+            <div key={fileKey} className="space-y-1">
+              <div className="flex justify-between text-sm">
+                <span>{fileKey.split("-")[0]}</span>
+                <span>{progress}%</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div
+                  className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* File upload */}
+      <div>
+        <Label htmlFor="imageFile">Upload Image Files</Label>
+        <Input
+          id="imageFile"
+          type="file"
+          accept="image/*"
+          multiple
+          disabled={uploading}
+          onChange={(e) => {
+            if (e.target.files) {
+              handleFileUpload(e.target.files);
+              e.target.value = ""; // Clear the input
+            }
+          }}
+          className="cursor-pointer disabled:opacity-50"
+        />
+        <p className="text-xs text-gray-500 mt-1">
+          Select multiple image files to upload to Cloudinary. Max 10MB per
+          file.
+        </p>
+      </div>
+
+      {/* Add image URL */}
+      <div>
+        <Label htmlFor="imageUrl">Add Image URL</Label>
+        <div className="flex gap-2">
+          <Input
+            id="imageUrl"
+            placeholder="https://example.com/image.jpg"
+            disabled={uploading}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                const input = e.target as HTMLInputElement;
+                handleUrlAdd(input.value);
+                input.value = "";
+              }
+            }}
+          />
+          <Button
+            type="button"
+            variant="outline"
+            disabled={uploading}
+            onClick={(e) => {
+              const input = (e.target as HTMLElement)
+                .previousElementSibling as HTMLInputElement;
+              handleUrlAdd(input.value);
+              input.value = "";
+            }}
+          >
+            <Plus className="h-4 w-4" />
+          </Button>
+        </div>
+        <p className="text-xs text-gray-500 mt-1">
+          Add external image URLs or press Enter to add.
+        </p>
+      </div>
+
+      {uploading && (
+        <div className="flex items-center gap-2 text-blue-600">
+          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+          <span className="text-sm">Uploading images...</span>
+        </div>
+      )}
+    </div>
   );
 }

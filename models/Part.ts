@@ -31,7 +31,12 @@ export interface IPart {
   location?: string;
 
   // Images and media
-  images: string[];
+  images: {
+    url: string;
+    publicId: string;
+    width?: number;
+    height?: number;
+  }[];
   thumbnailImage?: string;
   technicalDiagram?: string;
 

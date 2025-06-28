@@ -116,10 +116,12 @@ function AdminDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                  <Button className="justify-start" variant="outline">
-                    <Icons.package className="mr-2 h-4 w-4" />
-                    Manage Parts
-                  </Button>
+                  <Link href="/admin/parts">
+                    <Button className="justify-start" variant="outline">
+                      <Icons.package className="mr-2 h-4 w-4" />
+                      Manage Parts
+                    </Button>
+                  </Link>
                   <Button className="justify-start" variant="outline">
                     <Icons.users className="mr-2 h-4 w-4" />
                     Manage Users
