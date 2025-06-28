@@ -29,16 +29,21 @@ import Footer from "../../components/Footer";
 // Backward compatible interface - will gradually transition to use centralized IPart model
 interface Part {
   _id: string;
+  id?: string; // API sometimes returns id instead of _id
   partNumber: string;
   name: string;
   description: string;
   category: string;
+  subcategory?: string;
   brand: string;
-  vehicleMake: string; // Legacy field for compatibility
-  vehicleModel: string; // Legacy field for compatibility
+  manufacturer?: string;
   price: number;
+  costPrice?: number;
+  currency?: string;
   stock: number;
-  condition: string; // Legacy field for compatibility
+  lowStockThreshold?: number;
+  sku?: string;
+  location?: string;
   images: {
     url: string;
     publicId: string;
@@ -46,11 +51,17 @@ interface Part {
     height?: number;
   }[];
   specifications: Record<string, any>;
-  warranty: string; // Legacy field for compatibility
-  weight: number; // Legacy field for compatibility
   compatibility: Record<string, any>;
-  averageRating: number;
-  reviewCount: number;
+  tags?: string[];
+  searchKeywords?: string[];
+  isActive?: boolean;
+  isFeatured?: boolean;
+  averageRating?: number;
+  reviewCount?: number;
+  createdAt?: Date;
+  updatedAt?: Date;
+  createdBy?: string;
+  lastModifiedBy?: string;
 }
 
 export default function PartDetailPage() {
@@ -73,8 +84,20 @@ export default function PartDetailPage() {
   const fetchPart = async (id: string) => {
     setLoading(true);
     try {
-      const data = await apiClient.getPart(id);
-      setPart(data);
+      const response = await apiClient.getPart(id);
+      const partData = response.part || response; // Handle both wrapped and unwrapped responses
+
+      // Ensure images array exists and is properly formatted
+      if (partData && !partData.images) {
+        partData.images = [];
+      }
+
+      // Handle both _id and id fields
+      if (partData && partData.id && !partData._id) {
+        partData._id = partData.id;
+      }
+
+      setPart(partData);
     } catch (error) {
       console.error("Fetch part error:", error);
       toast.error("Failed to load part details. Please try again.");
@@ -94,7 +117,7 @@ export default function PartDetailPage() {
         name: part.name,
         price: part.price,
         stock: part.stock,
-        image: part.images[0]?.url || "/placeholder.jpg",
+        image: part.images?.[0]?.url || "/placeholder.jpg",
       });
     }
   };
@@ -111,7 +134,7 @@ export default function PartDetailPage() {
       try {
         await navigator.share({
           title: part?.name,
-          text: `Check out this ${part?.name} for ${part?.vehicleMake} ${part?.vehicleModel}`,
+          text: `Check out this ${part?.name} - ${part?.description}`,
           url: window.location.href,
         });
       } catch (error) {
@@ -208,7 +231,7 @@ export default function PartDetailPage() {
           <div className="space-y-4">
             <div className="relative">
               <img
-                src={part.images[selectedImage]?.url || "/placeholder.jpg"}
+                src={part.images?.[selectedImage]?.url || "/placeholder.jpg"}
                 alt={part.name}
                 className="w-full h-96 object-cover rounded-lg bg-white border"
               />
@@ -222,7 +245,7 @@ export default function PartDetailPage() {
               </Button>
             </div>
 
-            {part.images.length > 1 && (
+            {part.images && part.images.length > 1 && (
               <div className="flex gap-2 overflow-x-auto">
                 {part.images.map((image, index) => (
                   <button
@@ -258,7 +281,9 @@ export default function PartDetailPage() {
               </div>
               <p className="text-gray-600">Part Number: {part.partNumber}</p>
               <div className="flex items-center gap-2 mt-2">
-                <Badge variant="outline">{part.condition}</Badge>
+                <Badge variant="outline">
+                  {part.specifications?.condition || "New"}
+                </Badge>
                 <Badge variant={part.stock > 0 ? "default" : "destructive"}>
                   {part.stock > 0 ? `${part.stock} in stock` : "Out of Stock"}
                 </Badge>
@@ -274,17 +299,19 @@ export default function PartDetailPage() {
             {/* Vehicle Compatibility */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Vehicle Compatibility</CardTitle>
+                <CardTitle className="text-lg">Part Details</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <span className="text-sm text-gray-600">Make:</span>
-                    <p className="font-semibold">{part.vehicleMake}</p>
+                    <span className="text-sm text-gray-600">Brand:</span>
+                    <p className="font-semibold">{part.brand}</p>
                   </div>
                   <div>
-                    <span className="text-sm text-gray-600">Model:</span>
-                    <p className="font-semibold">{part.vehicleModel}</p>
+                    <span className="text-sm text-gray-600">Manufacturer:</span>
+                    <p className="font-semibold">
+                      {part.manufacturer || part.brand}
+                    </p>
                   </div>
                   <div>
                     <span className="text-sm text-gray-600">Category:</span>
@@ -292,7 +319,10 @@ export default function PartDetailPage() {
                   </div>
                   <div>
                     <span className="text-sm text-gray-600">Weight:</span>
-                    <p className="font-semibold">{part.weight} kg</p>
+                    <p className="font-semibold">
+                      {part.specifications?.weight || "N/A"}{" "}
+                      {part.specifications?.weight ? "kg" : ""}
+                    </p>
                   </div>
                 </div>
               </CardContent>
@@ -374,7 +404,9 @@ export default function PartDetailPage() {
               <div className="text-center">
                 <Award className="h-8 w-8 text-[#D72638] mx-auto mb-2" />
                 <p className="text-sm font-medium">Warranty</p>
-                <p className="text-xs text-gray-600">{part.warranty}</p>
+                <p className="text-xs text-gray-600">
+                  {part.specifications?.warranty || "Standard"}
+                </p>
               </div>
             </div>
           </div>
@@ -396,15 +428,33 @@ export default function PartDetailPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="grid md:grid-cols-2 gap-4">
-                    {Object.entries(part.specifications).map(([key, value]) => (
-                      <div
-                        key={key}
-                        className="flex justify-between py-2 border-b border-gray-100 last:border-b-0"
-                      >
-                        <span className="text-gray-600">{key}:</span>
-                        <span className="font-medium">{value}</span>
-                      </div>
-                    ))}
+                    {Object.entries(part.specifications).map(([key, value]) => {
+                      // Handle object values by converting them to readable strings
+                      let displayValue;
+                      if (typeof value === "object" && value !== null) {
+                        // Handle dimensions objects
+                        if (value.length && value.width && value.height) {
+                          displayValue = `${value.length} x ${value.width} x ${value.height}`;
+                        } else if (value.length && value.width) {
+                          displayValue = `${value.length} x ${value.width}`;
+                        } else {
+                          // Convert other objects to JSON string
+                          displayValue = JSON.stringify(value);
+                        }
+                      } else {
+                        displayValue = String(value || "N/A");
+                      }
+
+                      return (
+                        <div
+                          key={key}
+                          className="flex justify-between py-2 border-b border-gray-100 last:border-b-0"
+                        >
+                          <span className="text-gray-600">{key}:</span>
+                          <span className="font-medium">{displayValue}</span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </CardContent>
               </Card>
@@ -419,11 +469,10 @@ export default function PartDetailPage() {
                   <div className="space-y-4">
                     <div>
                       <h4 className="font-semibold text-lg mb-2">
-                        {part.vehicleMake} {part.vehicleModel}
+                        {part.brand} {part.name}
                       </h4>
                       <p className="text-gray-600">
-                        This part is specifically designed for{" "}
-                        {part.vehicleMake} {part.vehicleModel} vehicles. Please
+                        This part is designed for compatible vehicles. Please
                         verify your vehicle's specifications before ordering.
                       </p>
                     </div>
@@ -462,7 +511,10 @@ export default function PartDetailPage() {
                     <div>
                       <h4 className="font-semibold mb-2">Returns & Warranty</h4>
                       <ul className="space-y-1 text-gray-600">
-                        <li>• {part.warranty} warranty included</li>
+                        <li>
+                          • {part.specifications?.warranty || "Standard"}{" "}
+                          warranty included
+                        </li>
                         <li>• 30-day return policy for unused items</li>
                         <li>• Original packaging required for returns</li>
                         <li>• Inspection may be required for returns</li>
