@@ -84,11 +84,15 @@ export async function authenticate(
 }
 
 // Helper function to create authenticated API route handler
-export function withAuth(
-  handler: (request: NextRequest, user: AuthUser) => Promise<NextResponse>,
+export function withAuth<T = any>(
+  handler: (
+    request: NextRequest,
+    user: AuthUser,
+    context?: T
+  ) => Promise<NextResponse>,
   requiredRole?: "admin" | "user"
 ) {
-  return async (request: NextRequest) => {
+  return async (request: NextRequest, context?: T) => {
     const { user, error } = await authenticate(request, requiredRole);
 
     if (error) {
@@ -102,13 +106,17 @@ export function withAuth(
       );
     }
 
-    return handler(request, user);
+    return handler(request, user, context);
   };
 }
 
 // Admin-only route wrapper
-export function withAdminAuth(
-  handler: (request: NextRequest, user: AuthUser) => Promise<NextResponse>
+export function withAdminAuth<T = any>(
+  handler: (
+    request: NextRequest,
+    user: AuthUser,
+    context?: T
+  ) => Promise<NextResponse>
 ) {
   return withAuth(handler, "admin");
 }

@@ -74,9 +74,8 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       parts: parts.map((part) => ({
-        id: part._id!.toString(),
         ...part,
-        _id: undefined,
+        _id: part._id!.toString(),
       })),
       pagination: {
         page,
@@ -142,6 +141,9 @@ export const POST = withAdminAuth(
         isFeatured: false,
         averageRating: 0,
         reviewCount: 0,
+        searchKeywords: validatedData.searchKeywords || [],
+        tags: validatedData.tags || [],
+        images: validatedData.images || [],
         createdAt: new Date(),
         updatedAt: new Date(),
         createdBy: new ObjectId(user.userId),

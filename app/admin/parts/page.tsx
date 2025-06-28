@@ -246,6 +246,11 @@ export default function AdminPartsPage() {
 
   const handleDelete = async (partId: string) => {
     try {
+      if (!partId) {
+        toast.error("Invalid part ID - cannot delete");
+        return;
+      }
+
       await apiClient.deletePart(partId);
       toast.success("Part deleted successfully");
       fetchParts();
@@ -515,7 +520,11 @@ export default function AdminPartsPage() {
                     {filteredParts.map((part) => {
                       const stockStatus = getStockStatus(part.stock);
                       return (
-                        <TableRow key={part._id}>
+                        <TableRow
+                          key={
+                            part._id || part.partNumber || `part-${part.name}`
+                          }
+                        >
                           <TableCell>
                             <div>
                               <div className="font-semibold flex items-center gap-2">
@@ -1325,7 +1334,7 @@ function CloudinaryImageUpload({
       {formData.images.length > 0 && (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {formData.images.map((image, index) => (
-            <div key={index} className="relative group">
+            <div key={image.url || `image-${index}`} className="relative group">
               <img
                 src={image.url}
                 alt={`Product ${index + 1}`}

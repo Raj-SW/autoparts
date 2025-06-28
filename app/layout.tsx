@@ -48,7 +48,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${poppins.variable} ${montserrat.variable}`}>
+    <html
+      lang="en"
+      className={`${poppins.variable} ${montserrat.variable}`}
+      suppressHydrationWarning={true}
+    >
       <body className={`${poppins.className} antialiased`}>
         <AuthProvider>
           <CartProvider>

@@ -35,11 +35,23 @@ export const POST = withAdminAuth(
         );
       }
 
-      // Validate file size (10MB limit)
+      // Validate file size (10MB limit, minimum 1KB)
       const maxSize = 10 * 1024 * 1024; // 10MB
+      const minSize = 1024; // 1KB minimum for valid images
+
       if (file.size > maxSize) {
         return NextResponse.json(
           { error: "File size too large. Maximum size is 10MB" },
+          { status: 400 }
+        );
+      }
+
+      if (file.size < minSize) {
+        return NextResponse.json(
+          {
+            error:
+              "File size too small. This doesn't appear to be a valid image file.",
+          },
           { status: 400 }
         );
       }
