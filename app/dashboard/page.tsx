@@ -12,9 +12,63 @@ import { Button } from "@/components/ui/button";
 import { Icons } from "@/components/ui/icons";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
+import { useState, useEffect } from "react";
+import { apiClient } from "@/lib/api-client";
+
+interface UserDashboardStats {
+  statistics: {
+    orders: {
+      total: number;
+      pending: number;
+      today: number;
+      thisMonth: number;
+    };
+    quotes: {
+      total: number;
+      pending: number;
+    };
+  };
+  recentOrders: Array<{
+    id: string;
+    orderNumber: string;
+    total: number;
+    status: string;
+    createdAt: string;
+  }>;
+  recentQuotes: Array<{
+    id: string;
+    quoteNumber: string;
+    status: string;
+    vehicle: {
+      make: string;
+      model: string;
+      year: number;
+    };
+    createdAt: string;
+  }>;
+}
 
 function DashboardPage() {
   const { user, logout } = useAuth();
+  const [stats, setStats] = useState<UserDashboardStats | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const data = await apiClient.getUserDashboardStats();
+        setStats(data);
+      } catch (error) {
+        console.error("Failed to fetch user dashboard stats:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (user) {
+      fetchStats();
+    }
+  }, [user]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -164,20 +218,47 @@ function DashboardPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">Total Orders</span>
-                  <span className="font-semibold">0</span>
+              {loading ? (
+                <div className="space-y-4">
+                  <div className="animate-pulse">
+                    <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                  </div>
+                  <div className="animate-pulse">
+                    <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                  </div>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">Pending Quotes</span>
-                  <span className="font-semibold">0</span>
+              ) : (
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-500">Total Orders</span>
+                    <span className="font-semibold">
+                      {stats?.statistics.orders.total || 0}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-500">
+                      Pending Orders
+                    </span>
+                    <span className="font-semibold">
+                      {stats?.statistics.orders.pending || 0}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-500">
+                      Pending Quotes
+                    </span>
+                    <span className="font-semibold">
+                      {stats?.statistics.quotes.pending || 0}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-500">
+                      Account Status
+                    </span>
+                    <Badge variant="outline">Active</Badge>
+                  </div>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">Account Status</span>
-                  <Badge variant="outline">Active</Badge>
-                </div>
-              </div>
+              )}
             </CardContent>
           </Card>
 
@@ -193,21 +274,71 @@ function DashboardPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-8">
-                <Icons.package className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  No orders yet
-                </h3>
-                <p className="text-gray-500 mb-4">
-                  When you place your first order, it will appear here.
-                </p>
-                <Link href="/catalog">
-                  <Button>
-                    <Icons.search className="mr-2 h-4 w-4" />
-                    Browse Parts
-                  </Button>
-                </Link>
-              </div>
+              {loading ? (
+                <div className="space-y-4">
+                  {[...Array(3)].map((_, i) => (
+                    <div key={i} className="animate-pulse">
+                      <div className="h-16 bg-gray-200 rounded"></div>
+                    </div>
+                  ))}
+                </div>
+              ) : stats?.recentOrders && stats.recentOrders.length > 0 ? (
+                <div className="space-y-4">
+                  {stats.recentOrders.map((order) => (
+                    <div
+                      key={order.id}
+                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
+                    >
+                      <div className="flex-1">
+                        <p className="font-medium">{order.orderNumber}</p>
+                        <p className="text-sm text-gray-500">
+                          {new Date(order.createdAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold">
+                          ${order.total.toFixed(2)}
+                        </p>
+                        <Badge
+                          variant={
+                            order.status === "delivered"
+                              ? "default"
+                              : order.status === "pending"
+                              ? "secondary"
+                              : "outline"
+                          }
+                          className="text-xs"
+                        >
+                          {order.status}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+                  <div className="text-center pt-4">
+                    <Link href="/orders">
+                      <Button variant="outline" size="sm">
+                        View All Orders
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <Icons.package className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    No orders yet
+                  </h3>
+                  <p className="text-gray-500 mb-4">
+                    When you place your first order, it will appear here.
+                  </p>
+                  <Link href="/catalog">
+                    <Button>
+                      <Icons.search className="mr-2 h-4 w-4" />
+                      Browse Parts
+                    </Button>
+                  </Link>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

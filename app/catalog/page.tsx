@@ -136,84 +136,12 @@ export default function CatalogPage() {
       }
     } catch (error) {
       console.error("Search error:", error);
-      toast.error("Failed to search parts. Using demo data.");
-      // Use demo data if API fails
-      setDemoData();
+      toast.error("Failed to search parts. Please try again.");
+      setParts([]);
+      setTotalCount(0);
     } finally {
       setLoading(false);
     }
-  };
-
-  const setDemoData = () => {
-    const demoPlarts: Part[] = [
-      {
-        _id: "1",
-        partNumber: "BRK001",
-        name: "Brake Pads - Front Set",
-        description:
-          "High-quality ceramic brake pads for optimal stopping power",
-        category: "Brake",
-        vehicleMake: "BMW",
-        vehicleModel: "3 Series",
-        price: 89.99,
-        stock: 15,
-        condition: "New",
-        images: ["/placeholder.jpg"],
-        specifications: {},
-        warranty: "12 months",
-        weight: 2.5,
-      },
-      {
-        _id: "2",
-        partNumber: "ENG002",
-        name: "Oil Filter",
-        description: "Premium oil filter for enhanced engine protection",
-        category: "Engine",
-        vehicleMake: "Audi",
-        vehicleModel: "A4",
-        price: 24.99,
-        stock: 30,
-        condition: "OEM",
-        images: ["/placeholder.jpg"],
-        specifications: {},
-        warranty: "6 months",
-        weight: 0.5,
-      },
-      {
-        _id: "3",
-        partNumber: "SUS003",
-        name: "Shock Absorber",
-        description: "Heavy-duty shock absorber for superior ride comfort",
-        category: "Suspension",
-        vehicleMake: "Mercedes-Benz",
-        vehicleModel: "C-Class",
-        price: 159.99,
-        stock: 8,
-        condition: "New",
-        images: ["/placeholder.jpg"],
-        specifications: {},
-        warranty: "24 months",
-        weight: 3.2,
-      },
-      {
-        _id: "4",
-        partNumber: "ELC004",
-        name: "Headlight Assembly",
-        description: "LED headlight assembly with auto-leveling",
-        category: "Electrical",
-        vehicleMake: "Toyota",
-        vehicleModel: "Hilux",
-        price: 299.99,
-        stock: 5,
-        condition: "New",
-        images: ["/placeholder.jpg"],
-        specifications: {},
-        warranty: "18 months",
-        weight: 4.1,
-      },
-    ];
-    setParts(demoPlarts);
-    setTotalCount(demoPlarts.length);
   };
 
   const handleAddToCart = (part: Part) => {

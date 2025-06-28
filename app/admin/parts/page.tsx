@@ -174,57 +174,20 @@ export default function AdminPartsPage() {
   const fetchParts = async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams();
-      params.append("page", currentPage.toString());
-      params.append("limit", "20");
-      if (categoryFilter) params.append("category", categoryFilter);
-      if (brandFilter) params.append("brand", brandFilter);
-      if (stockFilter) params.append("stockLevel", stockFilter);
+      const data = await apiClient.getParts({
+        page: currentPage,
+        limit: 20,
+        ...(categoryFilter && { category: categoryFilter }),
+        ...(brandFilter && { brand: brandFilter }),
+        ...(stockFilter && { stockLevel: stockFilter }),
+      });
 
-      const response = await apiClient(`/api/parts?${params}`);
-      const data = await response.json();
-
-      if (response.ok) {
-        setParts(data.parts);
-        setTotalPages(Math.ceil(data.total / 20));
-      } else {
-        throw new Error(data.error || "Failed to fetch parts");
-      }
+      setParts(data.parts);
+      setTotalPages(Math.ceil(data.totalCount / 20));
     } catch (error) {
       console.error("Parts fetch error:", error);
       toast.error("Failed to load parts");
-
-      // Demo data fallback
-      setParts([
-        {
-          _id: "1",
-          partNumber: "BRK001",
-          name: "Brake Pads - Front Set",
-          description:
-            "High-performance ceramic brake pads for superior stopping power",
-          category: "Brakes",
-          brand: "Brembo",
-          price: 89.99,
-          salePrice: 79.99,
-          costPrice: 45.0,
-          stock: 25,
-          sku: "BRK-BREMBO-001",
-          compatibility: {
-            make: ["Toyota", "Honda"],
-            model: ["Camry", "Civic"],
-            year: [2015, 2016, 2017, 2018, 2019, 2020],
-          },
-          specifications: {
-            condition: "new",
-            weight: 2.5,
-            warranty: "2 years",
-          },
-          images: [],
-          tags: ["brake", "ceramic", "performance"],
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        },
-      ]);
+      setParts([]);
     } finally {
       setLoading(false);
     }
@@ -234,30 +197,20 @@ export default function AdminPartsPage() {
     e.preventDefault();
 
     try {
-      const url = editingPart ? `/api/parts/${editingPart._id}` : "/api/parts";
-      const method = editingPart ? "PUT" : "POST";
-
-      const response = await apiClient(url, {
-        method,
-        body: JSON.stringify(formData),
-      });
-
-      const result = await response.json();
-
-      if (response.ok) {
-        toast.success(
-          editingPart
-            ? "Part updated successfully"
-            : "Part created successfully"
-        );
-        setIsAddDialogOpen(false);
-        setIsEditDialogOpen(false);
-        setEditingPart(null);
-        resetForm();
-        fetchParts();
+      if (editingPart) {
+        await apiClient.updatePart(editingPart._id, formData);
       } else {
-        throw new Error(result.error || "Failed to save part");
+        await apiClient.createPart(formData);
       }
+
+      toast.success(
+        editingPart ? "Part updated successfully" : "Part created successfully"
+      );
+      setIsAddDialogOpen(false);
+      setIsEditDialogOpen(false);
+      setEditingPart(null);
+      resetForm();
+      fetchParts();
     } catch (error) {
       console.error("Part save error:", error);
       toast.error(
@@ -268,17 +221,9 @@ export default function AdminPartsPage() {
 
   const handleDelete = async (partId: string) => {
     try {
-      const response = await apiClient(`/api/parts/${partId}`, {
-        method: "DELETE",
-      });
-
-      if (response.ok) {
-        toast.success("Part deleted successfully");
-        fetchParts();
-      } else {
-        const result = await response.json();
-        throw new Error(result.error || "Failed to delete part");
-      }
+      await apiClient.deletePart(partId);
+      toast.success("Part deleted successfully");
+      fetchParts();
     } catch (error) {
       console.error("Part delete error:", error);
       toast.error(

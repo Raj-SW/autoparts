@@ -202,6 +202,16 @@ class ApiClient {
   async getDashboardStats() {
     return this.request<any>("/api/admin/dashboard");
   }
+
+  // User dashboard endpoints
+  async getUserDashboardStats() {
+    return this.request<any>("/api/user/dashboard");
+  }
+
+  // Company stats endpoints (public)
+  async getCompanyStats() {
+    return this.request<any>("/api/company/stats");
+  }
 }
 
 export const apiClient = new ApiClient();

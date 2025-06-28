@@ -73,43 +73,11 @@ export default function PartDetailPage() {
       }
     } catch (error) {
       console.error("Fetch part error:", error);
-      toast.error("Failed to load part details. Using demo data.");
-      // Use demo data if API fails
-      setDemoPart(id);
+      toast.error("Failed to load part details. Please try again.");
+      setPart(null);
     } finally {
       setLoading(false);
     }
-  };
-
-  const setDemoPart = (id: string) => {
-    const demoPart: Part = {
-      _id: id,
-      partNumber: "BRK001-BMW-3SERIES",
-      name: "Premium Ceramic Brake Pads - Front Set",
-      description:
-        "High-performance ceramic brake pads designed specifically for BMW 3 Series. These premium brake pads provide exceptional stopping power, reduced brake dust, and quiet operation. Manufactured to OEM specifications for perfect fit and optimal performance.",
-      category: "Brake",
-      vehicleMake: "BMW",
-      vehicleModel: "3 Series (F30, F31, F34)",
-      price: 129.99,
-      stock: 8,
-      condition: "New",
-      images: ["/placeholder.jpg", "/placeholder.jpg", "/placeholder.jpg"],
-      specifications: {
-        "Part Type": "Brake Pads",
-        Position: "Front Axle",
-        Material: "Ceramic",
-        "Pad Length": "155.4mm",
-        "Pad Width": "63.8mm",
-        "Pad Thickness": "17.5mm",
-        "Wear Indicator": "Yes",
-        Compatibility: "BMW 3 Series F30/F31/F34 2012-2019",
-        "OEM Numbers": "34116797859, 34116794917",
-      },
-      warranty: "24 months or 50,000 km",
-      weight: 2.5,
-    };
-    setPart(demoPart);
   };
 
   const handleAddToCart = () => {
