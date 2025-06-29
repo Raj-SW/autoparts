@@ -5,6 +5,8 @@ import { createQuoteSchema } from "@/utils/validation";
 import { IQuote } from "@/models/Quote";
 import { ObjectId } from "mongodb";
 import { z } from "zod";
+import { emailService } from "@/lib/email/email-service";
+import { pdfGenerator } from "@/lib/pdf/pdf-generator";
 
 // GET /api/quotes - Get quotes (Admin: all quotes, User: own quotes)
 export const GET = withAuth(async (request: NextRequest, user: AuthUser) => {
@@ -131,8 +133,46 @@ export async function POST(request: NextRequest) {
       throw new Error("Failed to create quote");
     }
 
-    // TODO: Send notification to admin and confirmation email to customer
-    console.log("New quote created:", quoteNumber);
+    // Generate PDF and send notifications
+    try {
+      const createdQuote = { ...newQuote, _id: result.insertedId };
+
+      console.log(`📧 Sending notifications for quote ${quoteNumber}...`);
+
+      // Generate PDF for the quote
+      const pdfBuffer = await pdfGenerator.generateQuotePDF(createdQuote);
+      console.log(`📄 PDF generated for quote ${quoteNumber}`);
+
+      // Send notification to admin with PDF attachment
+      const adminEmailSent = await emailService.sendQuoteNotificationToAdmin(
+        createdQuote,
+        pdfBuffer
+      );
+      console.log(
+        `📧 Admin notification ${
+          adminEmailSent ? "sent successfully" : "failed"
+        } for quote ${quoteNumber}`
+      );
+
+      // Send confirmation email to customer
+      const customerEmailSent =
+        await emailService.sendQuoteConfirmationToCustomer(createdQuote);
+      console.log(
+        `📧 Customer confirmation ${
+          customerEmailSent ? "sent successfully" : "failed"
+        } for quote ${quoteNumber}`
+      );
+
+      console.log(
+        `✅ Quote ${quoteNumber} created and all notifications processed`
+      );
+    } catch (emailError) {
+      console.error(
+        `❌ Failed to send notifications for quote ${quoteNumber}:`,
+        emailError
+      );
+      // Don't fail the entire request if email fails
+    }
 
     return NextResponse.json(
       {
@@ -140,7 +180,6 @@ export async function POST(request: NextRequest) {
           "Quote request submitted successfully. We will contact you soon.",
         quote: {
           id: result.insertedId.toString(),
-          quoteNumber,
           ...newQuote,
         },
       },

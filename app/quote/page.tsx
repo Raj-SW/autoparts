@@ -1,19 +1,27 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Label } from "@/components/ui/label"
-import { MessageCircle, FileText, Clock, CheckCircle } from "lucide-react"
-import { useState } from "react"
-import Navigation from "../components/Navigation"
-import Footer from "../components/Footer"
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { MessageCircle, FileText, Clock, CheckCircle } from "lucide-react";
+import { useState } from "react";
+import Navigation from "../components/Navigation";
+import Footer from "../components/Footer";
 
 export default function QuotePage() {
-  const [formSubmitted, setFormSubmitted] = useState(false)
+  const [formSubmitted, setFormSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
@@ -29,27 +37,106 @@ export default function QuotePage() {
     delivery: false,
     installation: false,
     warranty: false,
-  })
+  });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    setFormSubmitted(true)
-  }
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setSubmitError(null);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { id, value, type } = e.target
+    try {
+      // Transform form data to match API schema
+      const requestData = {
+        customer: {
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+        },
+        vehicle: {
+          make: formData.make,
+          model: formData.model,
+          year: parseInt(formData.year),
+          engine: formData.engine || undefined,
+        },
+        items: [
+          {
+            name: "Parts Request",
+            description: formData.parts,
+            quantity: 1,
+            notes: `Location: ${formData.location}${
+              formData.delivery ? " - Delivery needed" : ""
+            }${formData.installation ? " - Installation needed" : ""}${
+              formData.warranty ? " - Warranty info needed" : ""
+            }`,
+          },
+        ],
+        message: formData.comments || undefined,
+        urgency: mapUrgency(formData.urgency),
+        preferredContact: "whatsapp" as const,
+      };
+
+      const response = await fetch("/api/quotes", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestData),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to submit quote request");
+      }
+
+      const result = await response.json();
+      console.log("Quote submitted successfully:", result);
+      setFormSubmitted(true);
+    } catch (error) {
+      console.error("Error submitting quote:", error);
+      setSubmitError(
+        error instanceof Error
+          ? error.message
+          : "Failed to submit quote request"
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const mapUrgency = (
+    urgency: string
+  ): "low" | "medium" | "high" | "urgent" => {
+    switch (urgency) {
+      case "urgent":
+        return "urgent";
+      case "soon":
+        return "high";
+      case "normal":
+        return "medium";
+      case "planning":
+        return "low";
+      default:
+        return "medium";
+    }
+  };
+
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { id, value, type } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [id]: type === "checkbox" ? (e.target as HTMLInputElement).checked : value,
-    }))
-  }
+      [id]:
+        type === "checkbox" ? (e.target as HTMLInputElement).checked : value,
+    }));
+  };
 
   const handleSelectChange = (field: string, value: string) => {
     setFormData((prev) => ({
       ...prev,
       [field]: value,
-    }))
-  }
+    }));
+  };
 
   if (formSubmitted) {
     return (
@@ -61,10 +148,12 @@ export default function QuotePage() {
               <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
                 <CheckCircle className="w-10 h-10 text-green-600" />
               </div>
-              <h1 className="text-4xl font-bold text-gray-900 mb-4 font-montserrat">Quote Request Submitted!</h1>
+              <h1 className="text-4xl font-bold text-gray-900 mb-4 font-montserrat">
+                Quote Request Submitted!
+              </h1>
               <p className="text-xl text-gray-600 mb-8">
-                Thank you! We've received your quote request and will get back to you within 1 hour during business
-                hours.
+                Thank you! We've received your quote request and will get back
+                to you within 1 hour during business hours.
               </p>
               <div className="space-y-4">
                 <Button
@@ -73,7 +162,7 @@ export default function QuotePage() {
                   onClick={() =>
                     window.open(
                       "https://wa.me/23057123456?text=Hi! I just submitted a quote request form. Can you help me with the status?",
-                      "_blank",
+                      "_blank"
                     )
                   }
                 >
@@ -90,7 +179,7 @@ export default function QuotePage() {
         </section>
         <Footer />
       </div>
-    )
+    );
   }
 
   return (
@@ -101,9 +190,12 @@ export default function QuotePage() {
       <section className="bg-gradient-to-br from-gray-50 to-gray-100 py-16">
         <div className="container mx-auto px-4">
           <div className="text-center max-w-3xl mx-auto">
-            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4 font-montserrat">Request a Quote</h1>
+            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4 font-montserrat">
+              Request a Quote
+            </h1>
             <p className="text-xl text-gray-600 mb-8">
-              Fill out the form below and we'll get back to you with the best price within 1 hour
+              Fill out the form below and we'll get back to you with the best
+              price within 1 hour
             </p>
             <div className="flex items-center justify-center space-x-6 text-sm text-gray-600">
               <div className="flex items-center space-x-2">
@@ -129,8 +221,13 @@ export default function QuotePage() {
                   <div className="flex items-center space-x-4">
                     <MessageCircle className="w-8 h-8 text-green-600" />
                     <div>
-                      <h3 className="text-lg font-semibold text-green-800 font-montserrat">Need a Quote Faster?</h3>
-                      <p className="text-green-700">Get instant response via WhatsApp - usually within 15 minutes!</p>
+                      <h3 className="text-lg font-semibold text-green-800 font-montserrat">
+                        Need a Quote Faster?
+                      </h3>
+                      <p className="text-green-700">
+                        Get instant response via WhatsApp - usually within 15
+                        minutes!
+                      </p>
                     </div>
                   </div>
                   <Button
@@ -138,7 +235,7 @@ export default function QuotePage() {
                     onClick={() =>
                       window.open(
                         "https://wa.me/23057123456?text=Hi! I need a quick quote for spare parts:%0A%0ACar Make & Model: %0AYear: %0APart needed: %0ALocation: ",
-                        "_blank",
+                        "_blank"
                       )
                     }
                   >
@@ -162,7 +259,10 @@ export default function QuotePage() {
                   <FileText className="w-6 h-6 text-[#D72638]" />
                   <span>Detailed Quote Request</span>
                 </CardTitle>
-                <CardDescription>Please provide as much detail as possible for an accurate quote</CardDescription>
+                <CardDescription>
+                  Please provide as much detail as possible for an accurate
+                  quote
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleSubmit} className="space-y-6">
@@ -203,14 +303,18 @@ export default function QuotePage() {
 
                   {/* Vehicle Information */}
                   <div className="space-y-4">
-                    <h3 className="text-lg font-semibold font-montserrat">Vehicle Information</h3>
+                    <h3 className="text-lg font-semibold font-montserrat">
+                      Vehicle Information
+                    </h3>
                     <div className="grid md:grid-cols-3 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="make">Car Make *</Label>
                         <select
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#D72638]"
                           value={formData.make}
-                          onChange={(e) => handleSelectChange("make", e.target.value)}
+                          onChange={(e) =>
+                            handleSelectChange("make", e.target.value)
+                          }
                           required
                         >
                           <option value="">Select make</option>
@@ -245,7 +349,9 @@ export default function QuotePage() {
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="engine">Engine Size / Type (if known)</Label>
+                      <Label htmlFor="engine">
+                        Engine Size / Type (if known)
+                      </Label>
                       <Input
                         id="engine"
                         placeholder="e.g., 2.0L Diesel, 3.0L Petrol"
@@ -257,9 +363,13 @@ export default function QuotePage() {
 
                   {/* Parts Information */}
                   <div className="space-y-4">
-                    <h3 className="text-lg font-semibold font-montserrat">Parts Required</h3>
+                    <h3 className="text-lg font-semibold font-montserrat">
+                      Parts Required
+                    </h3>
                     <div className="space-y-2">
-                      <Label htmlFor="parts">Describe the parts you need *</Label>
+                      <Label htmlFor="parts">
+                        Describe the parts you need *
+                      </Label>
                       <Textarea
                         id="parts"
                         placeholder="Please describe the parts you need, including any part numbers if available..."
@@ -270,11 +380,15 @@ export default function QuotePage() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="urgency">How urgent is this request?</Label>
+                      <Label htmlFor="urgency">
+                        How urgent is this request?
+                      </Label>
                       <select
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#D72638]"
                         value={formData.urgency}
-                        onChange={(e) => handleSelectChange("urgency", e.target.value)}
+                        onChange={(e) =>
+                          handleSelectChange("urgency", e.target.value)
+                        }
                       >
                         <option value="">Select urgency</option>
                         <option value="urgent">Urgent - Need today</option>
@@ -287,7 +401,9 @@ export default function QuotePage() {
 
                   {/* Location */}
                   <div className="space-y-2">
-                    <Label htmlFor="location">Your Location in Mauritius *</Label>
+                    <Label htmlFor="location">
+                      Your Location in Mauritius *
+                    </Label>
                     <Input
                       id="location"
                       placeholder="e.g., Port Louis, Quatre Bornes, Curepipe"
@@ -299,7 +415,9 @@ export default function QuotePage() {
 
                   {/* Additional Options */}
                   <div className="space-y-4">
-                    <h3 className="text-lg font-semibold font-montserrat">Additional Options</h3>
+                    <h3 className="text-lg font-semibold font-montserrat">
+                      Additional Options
+                    </h3>
                     <div className="space-y-3">
                       <div className="flex items-center space-x-2">
                         <input
@@ -309,7 +427,9 @@ export default function QuotePage() {
                           onChange={handleInputChange}
                           className="w-4 h-4 text-[#D72638] border-gray-300 rounded focus:ring-[#D72638]"
                         />
-                        <Label htmlFor="delivery">I need delivery service</Label>
+                        <Label htmlFor="delivery">
+                          I need delivery service
+                        </Label>
                       </div>
                       <div className="flex items-center space-x-2">
                         <input
@@ -319,7 +439,9 @@ export default function QuotePage() {
                           onChange={handleInputChange}
                           className="w-4 h-4 text-[#D72638] border-gray-300 rounded focus:ring-[#D72638]"
                         />
-                        <Label htmlFor="installation">I need installation/fitting service</Label>
+                        <Label htmlFor="installation">
+                          I need installation/fitting service
+                        </Label>
                       </div>
                       <div className="flex items-center space-x-2">
                         <input
@@ -329,7 +451,9 @@ export default function QuotePage() {
                           onChange={handleInputChange}
                           className="w-4 h-4 text-[#D72638] border-gray-300 rounded focus:ring-[#D72638]"
                         />
-                        <Label htmlFor="warranty">I want extended warranty information</Label>
+                        <Label htmlFor="warranty">
+                          I want extended warranty information
+                        </Label>
                       </div>
                     </div>
                   </div>
@@ -346,14 +470,36 @@ export default function QuotePage() {
                     />
                   </div>
 
+                  {/* Error Message */}
+                  {submitError && (
+                    <div className="bg-red-50 border border-red-200 rounded-md p-4">
+                      <p className="text-red-800 text-sm">{submitError}</p>
+                    </div>
+                  )}
+
                   {/* Submit Button */}
                   <div className="pt-4">
-                    <Button type="submit" size="lg" className="w-full bg-[#D72638] hover:bg-[#B91C2C] text-lg py-4">
-                      <FileText className="w-5 h-5 mr-2" />
-                      Submit Quote Request
+                    <Button
+                      type="submit"
+                      size="lg"
+                      className="w-full bg-[#D72638] hover:bg-[#B91C2C] text-lg py-4 disabled:opacity-50 disabled:cursor-not-allowed"
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                          Submitting...
+                        </>
+                      ) : (
+                        <>
+                          <FileText className="w-5 h-5 mr-2" />
+                          Submit Quote Request
+                        </>
+                      )}
                     </Button>
                     <p className="text-sm text-gray-600 text-center mt-3">
-                      We'll respond within 1 hour during business hours (Mon-Sat, 9am-5pm)
+                      We'll respond within 1 hour during business hours
+                      (Mon-Sat, 9am-5pm)
                     </p>
                   </div>
                 </form>
@@ -365,5 +511,5 @@ export default function QuotePage() {
 
       <Footer />
     </div>
-  )
+  );
 }
