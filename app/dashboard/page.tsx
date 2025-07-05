@@ -48,10 +48,24 @@ interface UserDashboardStats {
   }>;
 }
 
+interface PartnerApplication {
+  _id: string;
+  applicationNumber: string;
+  businessName: string;
+  status: "pending" | "approved" | "rejected" | "under_review";
+  partnerLevel?: "bronze" | "silver" | "gold";
+  discountRate?: number;
+  creditLimit?: number;
+  createdAt: string;
+}
+
 function DashboardPage() {
   const { user, logout } = useAuth();
   const [stats, setStats] = useState<UserDashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [partnerApplication, setPartnerApplication] =
+    useState<PartnerApplication | null>(null);
+  const [partnerLoading, setPartnerLoading] = useState(true);
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -65,8 +79,22 @@ function DashboardPage() {
       }
     };
 
+    const fetchPartnerApplication = async () => {
+      try {
+        const response = await apiClient.getPartnerApplications();
+        if (response.partners && response.partners.length > 0) {
+          setPartnerApplication(response.partners[0]); // User should only have one application
+        }
+      } catch (error) {
+        console.error("Failed to fetch partner application:", error);
+      } finally {
+        setPartnerLoading(false);
+      }
+    };
+
     if (user) {
       fetchStats();
+      fetchPartnerApplication();
     }
   }, [user]);
 
@@ -118,7 +146,7 @@ function DashboardPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
                 <Link href="/catalog">
                   <Button className="w-full justify-start" variant="outline">
                     <Icons.search className="mr-2 h-4 w-4" />
@@ -135,6 +163,12 @@ function DashboardPage() {
                   <Button className="w-full justify-start" variant="outline">
                     <Icons.package className="mr-2 h-4 w-4" />
                     My Orders
+                  </Button>
+                </Link>
+                <Link href="/partner">
+                  <Button className="w-full justify-start" variant="outline">
+                    <Icons.users className="mr-2 h-4 w-4" />
+                    Partnership
                   </Button>
                 </Link>
                 <Link href="/profile">
@@ -257,6 +291,119 @@ function DashboardPage() {
                     </span>
                     <Badge variant="outline">Active</Badge>
                   </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Partnership Status */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Icons.users className="h-5 w-5" />
+                <span>Partnership</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {partnerLoading ? (
+                <div className="space-y-4">
+                  <div className="animate-pulse">
+                    <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                  </div>
+                  <div className="animate-pulse">
+                    <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                  </div>
+                </div>
+              ) : partnerApplication ? (
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-500">Application #</span>
+                    <span className="font-mono text-xs">
+                      {partnerApplication.applicationNumber}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-500">Business</span>
+                    <span className="font-semibold text-sm">
+                      {partnerApplication.businessName}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-500">Status</span>
+                    <Badge
+                      variant={
+                        partnerApplication.status === "approved"
+                          ? "default"
+                          : partnerApplication.status === "rejected"
+                          ? "destructive"
+                          : partnerApplication.status === "under_review"
+                          ? "secondary"
+                          : "outline"
+                      }
+                      className="text-xs"
+                    >
+                      {partnerApplication.status
+                        .replace("_", " ")
+                        .toUpperCase()}
+                    </Badge>
+                  </div>
+                  {partnerApplication.status === "approved" && (
+                    <>
+                      {partnerApplication.partnerLevel && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-500">Level</span>
+                          <Badge
+                            variant="outline"
+                            className="text-xs capitalize"
+                          >
+                            {partnerApplication.partnerLevel}
+                          </Badge>
+                        </div>
+                      )}
+                      {partnerApplication.discountRate && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-500">
+                            Discount
+                          </span>
+                          <span className="font-semibold text-green-600">
+                            {partnerApplication.discountRate}%
+                          </span>
+                        </div>
+                      )}
+                      {partnerApplication.creditLimit && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-500">
+                            Credit Limit
+                          </span>
+                          <span className="font-semibold">
+                            Rs {partnerApplication.creditLimit.toLocaleString()}
+                          </span>
+                        </div>
+                      )}
+                    </>
+                  )}
+                  <div className="text-center pt-2">
+                    <Link href="/partner">
+                      <Button variant="outline" size="sm" className="w-full">
+                        View Details
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-4">
+                  <Icons.users className="h-8 w-8 text-gray-300 mx-auto mb-2" />
+                  <h4 className="text-sm font-medium text-gray-900 mb-1">
+                    No Partnership Application
+                  </h4>
+                  <p className="text-xs text-gray-500 mb-3">
+                    Apply to become a partner and enjoy wholesale benefits.
+                  </p>
+                  <Link href="/partner">
+                    <Button size="sm" className="w-full">
+                      Apply Now
+                    </Button>
+                  </Link>
                 </div>
               )}
             </CardContent>

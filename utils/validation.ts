@@ -183,6 +183,44 @@ export const orderSchema = z.object({
   taxRate: z.number().min(0).max(1).optional(),
 });
 
+// Partner validation schemas
+export const createPartnerApplicationSchema = z.object({
+  businessName: z.string().min(2, "Business name must be at least 2 characters"),
+  businessType: z.enum(["garage", "workshop", "dealer", "mechanic", "other"], {
+    required_error: "Business type is required",
+  }),
+  yearsOperation: z.enum(["0-1", "1-3", "3-5", "5-10", "10+"], {
+    required_error: "Years of operation is required",
+  }),
+  location: z.string().min(2, "Location is required"),
+  address: z.string().min(5, "Full address is required"),
+  
+  contactName: z.string().min(2, "Contact name is required"),
+  position: z.string().min(2, "Position is required"),
+  phone: z.string().min(8, "Valid phone number is required"),
+  email: z.string().email("Valid email address is required"),
+  
+  specialization: z.array(z.string()).min(1, "At least one vehicle type must be selected"),
+  monthlyVolume: z.enum(["under-10k", "10k-25k", "25k-50k", "50k-100k", "over-100k"], {
+    required_error: "Monthly volume estimate is required",
+  }),
+  currentSuppliers: z.string().optional(),
+  additionalInfo: z.string().optional(),
+  
+  termsAccepted: z.boolean().refine((val) => val === true, {
+    message: "You must accept the partnership terms and conditions",
+  }),
+  marketingConsent: z.boolean().optional(),
+});
+
+export const updatePartnerStatusSchema = z.object({
+  status: z.enum(["pending", "approved", "rejected", "under_review"]),
+  partnerLevel: z.enum(["bronze", "silver", "gold"]).optional(),
+  discountRate: z.number().min(0).max(50).optional(),
+  creditLimit: z.number().min(0).optional(),
+  adminNotes: z.string().optional(),
+});
+
 // Helper function to validate data
 export async function validateData<T>(
   schema: z.ZodSchema<T>,

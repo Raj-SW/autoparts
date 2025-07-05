@@ -212,6 +212,38 @@ class ApiClient {
   async getCompanyStats() {
     return this.request<any>("/api/company/stats");
   }
+
+  // Partner endpoints
+  async createPartnerApplication(data: any) {
+    return this.request<any>("/api/partners", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getPartnerApplications(params?: any) {
+    const queryString = params
+      ? `?${new URLSearchParams(params).toString()}`
+      : "";
+    return this.request<any>(`/api/partners${queryString}`);
+  }
+
+  async getPartnerApplication(id: string) {
+    return this.request<any>(`/api/partners/${id}`);
+  }
+
+  async updatePartnerApplicationStatus(id: string, data: any) {
+    return this.request<any>(`/api/partners/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deletePartnerApplication(id: string) {
+    return this.request<any>(`/api/partners/${id}`, {
+      method: "DELETE",
+    });
+  }
 }
 
 export const apiClient = new ApiClient();

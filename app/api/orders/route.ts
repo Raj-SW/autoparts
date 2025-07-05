@@ -1,17 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-import { connectDB } from "@/lib/db/mongodb";
-import Order from "@/models/Order";
-import Part from "@/models/Part";
-import { verifyAuth } from "@/middleware/auth";
+import { getDatabase } from "@/lib/db/mongodb";
+import { ObjectId } from "mongodb";
+import { authenticate } from "@/middleware/auth";
 import { orderSchema } from "@/utils/validation";
 
 export async function POST(request: NextRequest) {
   try {
-    await connectDB();
+    const db = await getDatabase();
 
     // Verify authentication
-    const authResult = await verifyAuth(request);
-    if (!authResult.success) {
+    const { user, error } = await authenticate(request);
+    if (error) {
+      return error;
+    }
+
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -36,7 +39,9 @@ export async function POST(request: NextRequest) {
     const orderItems = [];
 
     for (const item of orderData.items) {
-      const part = await Part.findById(item.partId);
+      const part = await db.collection("parts").findOne({
+        _id: new ObjectId(item.partId),
+      });
       if (!part) {
         return NextResponse.json(
           {
@@ -80,9 +85,9 @@ export async function POST(request: NextRequest) {
       Math.random().toString(36).substr(2, 4).toUpperCase();
 
     // Create order
-    const order = new Order({
+    const order = {
       orderNumber,
-      userId: authResult.user.id,
+      userId: new ObjectId(user.userId),
       items: orderItems,
       subtotal,
       shippingCost,
@@ -98,22 +103,27 @@ export async function POST(request: NextRequest) {
         Date.now() +
           (orderData.shipping.estimatedDays || 5) * 24 * 60 * 60 * 1000
       ),
-    });
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
 
-    await order.save();
+    const result = await db.collection("orders").insertOne(order);
 
     // Update part stock
     for (const item of orderData.items) {
-      await Part.findByIdAndUpdate(item.partId, {
-        $inc: { stock: -item.quantity },
-      });
+      await db
+        .collection("parts")
+        .updateOne(
+          { _id: new ObjectId(item.partId) },
+          { $inc: { stock: -item.quantity } }
+        );
     }
 
     return NextResponse.json(
       {
         success: true,
         order: {
-          id: order._id,
+          id: result.insertedId,
           orderNumber: order.orderNumber,
           total: order.total,
           status: order.status,
@@ -135,11 +145,15 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    await connectDB();
+    const db = await getDatabase();
 
     // Verify authentication
-    const authResult = await verifyAuth(request);
-    if (!authResult.success) {
+    const { user, error } = await authenticate(request);
+    if (error) {
+      return error;
+    }
+
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -152,8 +166,8 @@ export async function GET(request: NextRequest) {
     const query: any = {};
 
     // Regular users can only see their own orders, admins can see all
-    if (authResult.user.role !== "admin") {
-      query.userId = authResult.user.id;
+    if (user.role !== "admin") {
+      query.userId = new ObjectId(user.userId);
     }
 
     if (status) {
@@ -162,13 +176,15 @@ export async function GET(request: NextRequest) {
 
     // Get orders with pagination
     const skip = (page - 1) * limit;
-    const orders = await Order.find(query)
+    const orders = await db
+      .collection("orders")
+      .find(query)
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
-      .populate("userId", "name email");
+      .toArray();
 
-    const total = await Order.countDocuments(query);
+    const total = await db.collection("orders").countDocuments(query);
 
     return NextResponse.json({
       orders,

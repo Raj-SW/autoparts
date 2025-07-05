@@ -52,7 +52,7 @@ export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
@@ -68,7 +68,8 @@ export default function OrdersPage() {
       const params = new URLSearchParams();
       params.append("page", currentPage.toString());
       params.append("limit", "10");
-      if (statusFilter) params.append("status", statusFilter);
+      if (statusFilter && statusFilter !== "all")
+        params.append("status", statusFilter);
 
       const data = await apiClient.request(`/api/orders?${params}`);
       setOrders(data.orders);
@@ -204,7 +205,7 @@ export default function OrdersPage() {
                   <SelectValue placeholder="Filter by status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Status</SelectItem>
+                  <SelectItem value="all">All Status</SelectItem>
                   <SelectItem value="processing">Processing</SelectItem>
                   <SelectItem value="shipped">Shipped</SelectItem>
                   <SelectItem value="delivered">Delivered</SelectItem>
@@ -355,12 +356,12 @@ export default function OrdersPage() {
           <div className="text-center py-16">
             <Package className="h-16 w-16 text-gray-300 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              {searchTerm || statusFilter
+              {searchTerm || (statusFilter && statusFilter !== "all")
                 ? "No matching orders found"
                 : "No orders yet"}
             </h3>
             <p className="text-gray-600 mb-6">
-              {searchTerm || statusFilter
+              {searchTerm || (statusFilter && statusFilter !== "all")
                 ? "Try adjusting your search or filter criteria."
                 : "Start shopping to see your orders here."}
             </p>
