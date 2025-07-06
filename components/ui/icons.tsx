@@ -3,6 +3,7 @@ import {
   Eye,
   EyeOff,
   Check,
+  CheckCircle,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -41,6 +42,7 @@ import {
   Twitter,
   Instagram,
   Linkedin,
+  MessageCircle,
   type LucideIcon,
 } from "lucide-react";
 
@@ -89,6 +91,8 @@ export const Icons = {
   twitter: Twitter,
   instagram: Instagram,
   linkedin: Linkedin,
+  checkCircle: CheckCircle,
+  messageCircle: MessageCircle,
   gitHub: ({ ...props }: React.SVGProps<SVGSVGElement>) => (
     <svg
       aria-hidden="true"

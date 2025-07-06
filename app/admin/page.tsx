@@ -136,10 +136,12 @@ function AdminDashboard() {
                     <Icons.fileText className="mr-2 h-4 w-4" />
                     View Orders
                   </Button>
-                  <Button className="justify-start" variant="outline">
-                    <Icons.bell className="mr-2 h-4 w-4" />
-                    Quotes ({stats?.statistics.quotes.pending || 0})
-                  </Button>
+                  <Link href="/admin/quotes">
+                    <Button className="justify-start" variant="outline">
+                      <Icons.bell className="mr-2 h-4 w-4" />
+                      Quotes ({stats?.statistics.quotes.pending || 0})
+                    </Button>
+                  </Link>
                 </div>
               </CardContent>
             </Card>
