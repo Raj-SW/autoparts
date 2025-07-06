@@ -22,10 +22,10 @@ export const GET = withAdminAuth(
   async (
     request: NextRequest,
     user: AuthUser,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
   ) => {
     try {
-      const { id } = params;
+      const { id } = await params;
 
       if (!ObjectId.isValid(id)) {
         return NextResponse.json(
@@ -65,10 +65,10 @@ export const PUT = withAdminAuth(
   async (
     request: NextRequest,
     user: AuthUser,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
   ) => {
     try {
-      const { id } = params;
+      const { id } = await params;
 
       if (!ObjectId.isValid(id)) {
         return NextResponse.json(
@@ -209,10 +209,10 @@ export const DELETE = withAdminAuth(
   async (
     request: NextRequest,
     user: AuthUser,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
   ) => {
     try {
-      const { id } = params;
+      const { id } = await params;
 
       if (!ObjectId.isValid(id)) {
         return NextResponse.json(

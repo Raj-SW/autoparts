@@ -55,6 +55,7 @@ interface Quote {
 
 export default function AdminQuotesPage() {
   const [quotes, setQuotes] = useState<Quote[]>([]);
+  const [filteredQuotes, setFilteredQuotes] = useState<Quote[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
@@ -67,9 +68,108 @@ export default function AdminQuotesPage() {
   const [updating, setUpdating] = useState(false);
   const { toast } = useToast();
 
+  // Search and filter states
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [urgencyFilter, setUrgencyFilter] = useState("all");
+  const [dateFilter, setDateFilter] = useState("all");
+  const [customDateFrom, setCustomDateFrom] = useState("");
+  const [customDateTo, setCustomDateTo] = useState("");
+
   useEffect(() => {
     fetchQuotes();
   }, []);
+
+  // Filter quotes whenever quotes or filter criteria change
+  useEffect(() => {
+    let filtered = [...quotes];
+
+    // Search filter
+    if (searchTerm) {
+      filtered = filtered.filter(
+        (quote) =>
+          quote.customer.name
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase()) ||
+          quote.customer.email
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase()) ||
+          quote.customer.phone.includes(searchTerm) ||
+          quote.quoteNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          quote.vehicle.make.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          quote.vehicle.model.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    // Status filter
+    if (statusFilter !== "all") {
+      filtered = filtered.filter((quote) => quote.status === statusFilter);
+    }
+
+    // Urgency filter
+    if (urgencyFilter !== "all") {
+      filtered = filtered.filter((quote) => quote.urgency === urgencyFilter);
+    }
+
+    // Date filter
+    if (dateFilter !== "all") {
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      const weekAgo = new Date(today);
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      const monthAgo = new Date(today);
+      monthAgo.setMonth(monthAgo.getMonth() - 1);
+
+      filtered = filtered.filter((quote) => {
+        const quoteDate = new Date(quote.createdAt);
+        const quoteDateOnly = new Date(
+          quoteDate.getFullYear(),
+          quoteDate.getMonth(),
+          quoteDate.getDate()
+        );
+
+        switch (dateFilter) {
+          case "today":
+            return quoteDateOnly.getTime() === today.getTime();
+          case "yesterday":
+            return quoteDateOnly.getTime() === yesterday.getTime();
+          case "week":
+            return quoteDate >= weekAgo;
+          case "month":
+            return quoteDate >= monthAgo;
+          case "custom":
+            if (customDateFrom && customDateTo) {
+              const fromDate = new Date(customDateFrom);
+              const toDate = new Date(customDateTo);
+              toDate.setHours(23, 59, 59, 999); // End of day
+              return quoteDate >= fromDate && quoteDate <= toDate;
+            } else if (customDateFrom) {
+              const fromDate = new Date(customDateFrom);
+              return quoteDate >= fromDate;
+            } else if (customDateTo) {
+              const toDate = new Date(customDateTo);
+              toDate.setHours(23, 59, 59, 999);
+              return quoteDate <= toDate;
+            }
+            return true;
+          default:
+            return true;
+        }
+      });
+    }
+
+    setFilteredQuotes(filtered);
+  }, [
+    quotes,
+    searchTerm,
+    statusFilter,
+    urgencyFilter,
+    dateFilter,
+    customDateFrom,
+    customDateTo,
+  ]);
 
   const fetchQuotes = async () => {
     try {
@@ -277,8 +377,190 @@ export default function AdminQuotesPage() {
         </Card>
       </div>
 
+      {/* Search and Filters */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="text-lg">Search & Filters</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+            {/* Search Input */}
+            <div className="lg:col-span-2">
+              <Label htmlFor="search">Search</Label>
+              <div className="relative">
+                <Icons.search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <Input
+                  id="search"
+                  placeholder="Search by customer, quote number, vehicle..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+
+            {/* Status Filter */}
+            <div>
+              <Label htmlFor="status-filter">Status</Label>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="All Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="quoted">Quoted</SelectItem>
+                  <SelectItem value="accepted">Accepted</SelectItem>
+                  <SelectItem value="rejected">Rejected</SelectItem>
+                  <SelectItem value="expired">Expired</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Urgency Filter */}
+            <div>
+              <Label htmlFor="urgency-filter">Urgency</Label>
+              <Select value={urgencyFilter} onValueChange={setUrgencyFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="All Urgency" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Urgency</SelectItem>
+                  <SelectItem value="urgent">Urgent</SelectItem>
+                  <SelectItem value="high">High</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="low">Low</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Date Filter */}
+            <div>
+              <Label htmlFor="date-filter">Date</Label>
+              <Select value={dateFilter} onValueChange={setDateFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="All Dates" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Dates</SelectItem>
+                  <SelectItem value="today">Today</SelectItem>
+                  <SelectItem value="yesterday">Yesterday</SelectItem>
+                  <SelectItem value="week">Last 7 Days</SelectItem>
+                  <SelectItem value="month">Last 30 Days</SelectItem>
+                  <SelectItem value="custom">Custom Range</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Custom Date Range */}
+          {dateFilter === "custom" && (
+            <div className="grid gap-4 md:grid-cols-2 mt-4">
+              <div>
+                <Label htmlFor="date-from">From Date</Label>
+                <Input
+                  id="date-from"
+                  type="date"
+                  value={customDateFrom}
+                  onChange={(e) => setCustomDateFrom(e.target.value)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="date-to">To Date</Label>
+                <Input
+                  id="date-to"
+                  type="date"
+                  value={customDateTo}
+                  onChange={(e) => setCustomDateTo(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Filter Summary */}
+          <div className="flex flex-wrap gap-2 mt-4">
+            {searchTerm && (
+              <Badge variant="secondary" className="flex items-center gap-1">
+                Search: "{searchTerm}"
+                <button
+                  onClick={() => setSearchTerm("")}
+                  className="ml-1 hover:bg-gray-200 rounded-full p-0.5"
+                >
+                  <Icons.close className="h-3 w-3" />
+                </button>
+              </Badge>
+            )}
+            {statusFilter !== "all" && (
+              <Badge variant="secondary" className="flex items-center gap-1">
+                Status: {statusFilter}
+                <button
+                  onClick={() => setStatusFilter("all")}
+                  className="ml-1 hover:bg-gray-200 rounded-full p-0.5"
+                >
+                  <Icons.close className="h-3 w-3" />
+                </button>
+              </Badge>
+            )}
+            {urgencyFilter !== "all" && (
+              <Badge variant="secondary" className="flex items-center gap-1">
+                Urgency: {urgencyFilter}
+                <button
+                  onClick={() => setUrgencyFilter("all")}
+                  className="ml-1 hover:bg-gray-200 rounded-full p-0.5"
+                >
+                  <Icons.close className="h-3 w-3" />
+                </button>
+              </Badge>
+            )}
+            {dateFilter !== "all" && (
+              <Badge variant="secondary" className="flex items-center gap-1">
+                Date:{" "}
+                {dateFilter === "custom"
+                  ? `${customDateFrom || "..."} to ${customDateTo || "..."}`
+                  : dateFilter}
+                <button
+                  onClick={() => {
+                    setDateFilter("all");
+                    setCustomDateFrom("");
+                    setCustomDateTo("");
+                  }}
+                  className="ml-1 hover:bg-gray-200 rounded-full p-0.5"
+                >
+                  <Icons.close className="h-3 w-3" />
+                </button>
+              </Badge>
+            )}
+            {(searchTerm ||
+              statusFilter !== "all" ||
+              urgencyFilter !== "all" ||
+              dateFilter !== "all") && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setSearchTerm("");
+                  setStatusFilter("all");
+                  setUrgencyFilter("all");
+                  setDateFilter("all");
+                  setCustomDateFrom("");
+                  setCustomDateTo("");
+                }}
+                className="h-6 px-2 text-xs"
+              >
+                Clear All
+              </Button>
+            )}
+          </div>
+
+          {/* Results Count */}
+          <div className="mt-4 text-sm text-gray-600">
+            Showing {filteredQuotes.length} of {quotes.length} quotes
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="grid gap-6">
-        {quotes.map((quote) => (
+        {filteredQuotes.map((quote) => (
           <Card key={quote.id} className="border-l-4 border-l-blue-500">
             <CardHeader>
               <div className="flex justify-between items-start">
@@ -452,12 +734,40 @@ export default function AdminQuotesPage() {
         ))}
       </div>
 
-      {quotes.length === 0 && (
+      {filteredQuotes.length === 0 && (
         <div className="text-center py-12">
-          <div className="text-gray-500 text-lg">No quotes found</div>
-          <p className="text-sm text-gray-400 mt-2">
-            New quote requests will appear here
-          </p>
+          {quotes.length === 0 ? (
+            <>
+              <div className="text-gray-500 text-lg">No quotes found</div>
+              <p className="text-sm text-gray-400 mt-2">
+                New quote requests will appear here
+              </p>
+            </>
+          ) : (
+            <>
+              <div className="text-gray-500 text-lg">
+                No quotes match your filters
+              </div>
+              <p className="text-sm text-gray-400 mt-2">
+                Try adjusting your search criteria or clearing filters
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setSearchTerm("");
+                  setStatusFilter("all");
+                  setUrgencyFilter("all");
+                  setDateFilter("all");
+                  setCustomDateFrom("");
+                  setCustomDateTo("");
+                }}
+                className="mt-3"
+              >
+                Clear All Filters
+              </Button>
+            </>
+          )}
         </div>
       )}
 
