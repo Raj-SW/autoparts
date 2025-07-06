@@ -244,6 +244,31 @@ class ApiClient {
       method: "DELETE",
     });
   }
+
+  // User management endpoints (Admin only)
+  async getUsers(params?: any) {
+    const queryString = params
+      ? `?${new URLSearchParams(params).toString()}`
+      : "";
+    return this.request<any>(`/api/admin/users${queryString}`);
+  }
+
+  async getUser(id: string) {
+    return this.request<any>(`/api/admin/users/${id}`);
+  }
+
+  async updateUser(id: string, data: any) {
+    return this.request<any>(`/api/admin/users/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteUser(id: string) {
+    return this.request<any>(`/api/admin/users/${id}`, {
+      method: "DELETE",
+    });
+  }
 }
 
 export const apiClient = new ApiClient();

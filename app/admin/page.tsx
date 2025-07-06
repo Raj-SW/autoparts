@@ -131,10 +131,12 @@ function AdminDashboard() {
                       Partners
                     </Button>
                   </Link>
-                  <Button className="justify-start" variant="outline">
-                    <Icons.users className="mr-2 h-4 w-4" />
-                    Manage Users
-                  </Button>
+                  <Link href="/admin/users">
+                    <Button className="justify-start" variant="outline">
+                      <Icons.users className="mr-2 h-4 w-4" />
+                      Manage Users
+                    </Button>
+                  </Link>
                   <Button className="justify-start" variant="outline">
                     <Icons.fileText className="mr-2 h-4 w-4" />
                     View Orders

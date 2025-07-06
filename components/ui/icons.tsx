@@ -62,6 +62,7 @@ export const Icons = {
   circle: Circle,
   close: X,
   add: Plus,
+  plus: Plus,
   search: Search,
   star: Star,
   cart: ShoppingCart,

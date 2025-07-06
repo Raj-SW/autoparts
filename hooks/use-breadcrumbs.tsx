@@ -57,6 +57,10 @@ const routeConfig: Record<string, RouteConfig> = {
     title: "Partner Management",
     icon: <Icons.users className="h-4 w-4" />,
   },
+  "/admin/users": {
+    title: "User Management",
+    icon: <Icons.users className="h-4 w-4" />,
+  },
 
   // Dynamic routes patterns
   "/catalog/[id]": { title: "Part Details", dynamic: true },

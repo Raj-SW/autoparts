@@ -5,8 +5,9 @@ export interface IUser {
   email: string;
   password: string;
   name: string;
-  role: "admin" | "user";
-  phoneNumber?: string;
+  role: "admin" | "customer";
+  phone?: string;
+  phoneNumber?: string; // Keep for backward compatibility
   address?: {
     street?: string;
     city?: string;
@@ -14,23 +15,27 @@ export interface IUser {
     zipCode?: string;
     country?: string;
   };
-  isEmailVerified: boolean;
+  emailVerified: boolean;
+  isEmailVerified?: boolean; // Keep for backward compatibility
   emailVerificationToken?: string;
   passwordResetToken?: string;
   passwordResetExpires?: Date;
   refreshToken?: string;
   createdAt: Date;
   updatedAt: Date;
-  lastLogin?: Date;
+  lastLoginAt?: Date;
+  lastLogin?: Date; // Keep for backward compatibility
   isActive: boolean;
+  adminNotes?: string;
 }
 
 export const UserSchema = {
   email: { type: "string", required: true, unique: true },
   password: { type: "string", required: true },
   name: { type: "string", required: true },
-  role: { type: "string", enum: ["admin", "user"], default: "user" },
-  phoneNumber: { type: "string" },
+  role: { type: "string", enum: ["admin", "customer"], default: "customer" },
+  phone: { type: "string" },
+  phoneNumber: { type: "string" }, // Keep for backward compatibility
   address: {
     street: { type: "string" },
     city: { type: "string" },
@@ -38,13 +43,16 @@ export const UserSchema = {
     zipCode: { type: "string" },
     country: { type: "string" },
   },
-  isEmailVerified: { type: "boolean", default: false },
+  emailVerified: { type: "boolean", default: false },
+  isEmailVerified: { type: "boolean", default: false }, // Keep for backward compatibility
   emailVerificationToken: { type: "string" },
   passwordResetToken: { type: "string" },
   passwordResetExpires: { type: "date" },
   refreshToken: { type: "string" },
   createdAt: { type: "date", default: Date.now },
   updatedAt: { type: "date", default: Date.now },
-  lastLogin: { type: "date" },
+  lastLoginAt: { type: "date" },
+  lastLogin: { type: "date" }, // Keep for backward compatibility
   isActive: { type: "boolean", default: true },
+  adminNotes: { type: "string" },
 };
