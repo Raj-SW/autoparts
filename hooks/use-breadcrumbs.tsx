@@ -38,6 +38,10 @@ const routeConfig: Record<string, RouteConfig> = {
     title: "Dashboard",
     icon: <Icons.trendingUp className="h-4 w-4" />,
   },
+  "/profile": {
+    title: "Profile Settings",
+    icon: <Icons.user className="h-4 w-4" />,
+  },
   "/orders": { title: "Orders", icon: <Icons.fileText className="h-4 w-4" /> },
 
   // Admin routes

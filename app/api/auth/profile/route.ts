@@ -76,11 +76,31 @@ export const PUT = withAuth(async (request: NextRequest, user: AuthUser) => {
     const db = await getDatabase();
     const usersCollection = db.collection<IUser>("users");
 
+    // Check if email is being updated and ensure uniqueness
+    if (validatedData.email) {
+      const existingUser = await usersCollection.findOne({
+        email: validatedData.email,
+        _id: { $ne: new ObjectId(user.userId) },
+      });
+
+      if (existingUser) {
+        return NextResponse.json(
+          { error: "Email address is already in use" },
+          { status: 400 }
+        );
+      }
+    }
+
     const updateData: any = {
       updatedAt: new Date(),
     };
 
     if (validatedData.name) updateData.name = validatedData.name;
+    if (validatedData.email) {
+      updateData.email = validatedData.email;
+      // Reset email verification when email is changed
+      updateData.isEmailVerified = false;
+    }
     if (validatedData.phoneNumber !== undefined)
       updateData.phoneNumber = validatedData.phoneNumber;
     if (validatedData.address) updateData.address = validatedData.address;

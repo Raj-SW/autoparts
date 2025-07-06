@@ -15,6 +15,7 @@ export const loginSchema = z.object({
 
 export const updateProfileSchema = z.object({
   name: z.string().min(2).optional(),
+  email: z.string().email("Invalid email address").optional(),
   phoneNumber: z.string().optional(),
   address: z
     .object({
@@ -185,7 +186,9 @@ export const orderSchema = z.object({
 
 // Partner validation schemas
 export const createPartnerApplicationSchema = z.object({
-  businessName: z.string().min(2, "Business name must be at least 2 characters"),
+  businessName: z
+    .string()
+    .min(2, "Business name must be at least 2 characters"),
   businessType: z.enum(["garage", "workshop", "dealer", "mechanic", "other"], {
     required_error: "Business type is required",
   }),
@@ -194,19 +197,24 @@ export const createPartnerApplicationSchema = z.object({
   }),
   location: z.string().min(2, "Location is required"),
   address: z.string().min(5, "Full address is required"),
-  
+
   contactName: z.string().min(2, "Contact name is required"),
   position: z.string().min(2, "Position is required"),
   phone: z.string().min(8, "Valid phone number is required"),
   email: z.string().email("Valid email address is required"),
-  
-  specialization: z.array(z.string()).min(1, "At least one vehicle type must be selected"),
-  monthlyVolume: z.enum(["under-10k", "10k-25k", "25k-50k", "50k-100k", "over-100k"], {
-    required_error: "Monthly volume estimate is required",
-  }),
+
+  specialization: z
+    .array(z.string())
+    .min(1, "At least one vehicle type must be selected"),
+  monthlyVolume: z.enum(
+    ["under-10k", "10k-25k", "25k-50k", "50k-100k", "over-100k"],
+    {
+      required_error: "Monthly volume estimate is required",
+    }
+  ),
   currentSuppliers: z.string().optional(),
   additionalInfo: z.string().optional(),
-  
+
   termsAccepted: z.boolean().refine((val) => val === true, {
     message: "You must accept the partnership terms and conditions",
   }),

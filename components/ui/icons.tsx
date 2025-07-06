@@ -44,6 +44,9 @@ import {
   Linkedin,
   MessageCircle,
   Home,
+  Save,
+  Lock,
+  Info,
   type LucideIcon,
 } from "lucide-react";
 
@@ -96,6 +99,9 @@ export const Icons = {
   checkCircle: CheckCircle,
   messageCircle: MessageCircle,
   home: Home,
+  save: Save,
+  lock: Lock,
+  info: Info,
   gitHub: ({ ...props }: React.SVGProps<SVGSVGElement>) => (
     <svg
       aria-hidden="true"
