@@ -17,6 +17,7 @@ import { MessageCircle, FileText, Clock, CheckCircle } from "lucide-react";
 import { useState } from "react";
 import Navigation from "../components/Navigation";
 import Footer from "../components/Footer";
+import { BreadcrumbWrapper } from "@/components/BreadcrumbWrapper";
 
 export default function QuotePage() {
   const [formSubmitted, setFormSubmitted] = useState(false);
@@ -189,6 +190,8 @@ export default function QuotePage() {
       {/* Header */}
       <section className="bg-gradient-to-br from-gray-50 to-gray-100 py-16">
         <div className="container mx-auto px-4">
+          <BreadcrumbWrapper />
+
           <div className="text-center max-w-3xl mx-auto">
             <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4 font-montserrat">
               Request a Quote

@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { apiClient } from "@/lib/api-client";
+import { BreadcrumbWrapper } from "@/components/BreadcrumbWrapper";
 
 interface UserDashboardStats {
   statistics: {
@@ -132,6 +133,8 @@ function DashboardPage() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <BreadcrumbWrapper />
+
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {/* Welcome Card */}
           <Card className="md:col-span-2 lg:col-span-3">

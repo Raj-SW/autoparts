@@ -22,6 +22,7 @@ import Link from "next/link";
 import Navigation from "../components/Navigation";
 import Footer from "../components/Footer";
 import { IPart } from "@/models/Part";
+import { BreadcrumbWrapper } from "@/components/BreadcrumbWrapper";
 
 // For backward compatibility in components that expect certain fields
 interface Part extends Omit<IPart, "_id" | "images"> {
@@ -158,6 +159,8 @@ export default function CatalogPage() {
       {/* Header */}
       <div className="bg-white border-b">
         <div className="container mx-auto px-4 py-8">
+          <BreadcrumbWrapper />
+
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">

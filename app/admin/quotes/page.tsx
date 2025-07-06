@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/select";
 import { Icons } from "@/components/ui/icons";
 import { useToast } from "@/components/ui/use-toast";
+import { BreadcrumbWrapper } from "@/components/BreadcrumbWrapper";
 
 interface Quote {
   id: string;
@@ -322,6 +323,8 @@ export default function AdminQuotesPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      <BreadcrumbWrapper />
+
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">
           Quote Management
@@ -805,7 +808,10 @@ export default function AdminQuotesPage() {
                 placeholder="Enter quoted price"
                 value={updateForm.quotedPrice}
                 onChange={(e) =>
-                  setUpdateForm({ ...updateForm, quotedPrice: e.target.value })
+                  setUpdateForm({
+                    ...updateForm,
+                    quotedPrice: e.target.value,
+                  })
                 }
               />
             </div>

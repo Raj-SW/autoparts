@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { apiClient } from "@/lib/api-client";
+import { BreadcrumbWrapper } from "@/components/BreadcrumbWrapper";
 
 interface DashboardStats {
   statistics: {
@@ -100,6 +101,8 @@ function AdminDashboard() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <BreadcrumbWrapper />
+
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <Icons.spinner className="h-8 w-8 animate-spin" />
