@@ -269,6 +269,32 @@ class ApiClient {
       method: "DELETE",
     });
   }
+
+  // Order management endpoints
+  async getOrders(params?: any) {
+    const queryString = params
+      ? `?${new URLSearchParams(params).toString()}`
+      : "";
+    return this.request<any>(`/api/orders${queryString}`);
+  }
+
+  async getOrder(id: string) {
+    return this.request<any>(`/api/orders/${id}`);
+  }
+
+  async createOrder(data: any) {
+    return this.request<any>("/api/orders", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateOrder(id: string, data: any) {
+    return this.request<any>(`/api/orders/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+  }
 }
 
 export const apiClient = new ApiClient();

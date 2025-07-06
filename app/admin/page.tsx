@@ -137,10 +137,12 @@ function AdminDashboard() {
                       Manage Users
                     </Button>
                   </Link>
-                  <Button className="justify-start" variant="outline">
-                    <Icons.fileText className="mr-2 h-4 w-4" />
-                    View Orders
-                  </Button>
+                  <Link href="/admin/orders">
+                    <Button className="justify-start" variant="outline">
+                      <Icons.fileText className="mr-2 h-4 w-4" />
+                      View Orders
+                    </Button>
+                  </Link>
                   <Link href="/admin/quotes">
                     <Button className="justify-start" variant="outline">
                       <Icons.bell className="mr-2 h-4 w-4" />

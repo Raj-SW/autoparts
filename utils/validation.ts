@@ -172,6 +172,10 @@ export const orderSchema = z.object({
     method: z.enum(["card", "cod"], {
       required_error: "Payment method is required",
     }),
+    status: z
+      .enum(["pending", "processing", "paid", "failed", "refunded"])
+      .optional(),
+    paymentIntentId: z.string().optional(),
     cardDetails: z
       .object({
         cardNumber: z.string().optional(),
@@ -181,6 +185,7 @@ export const orderSchema = z.object({
       })
       .optional(),
   }),
+  customerNotes: z.string().optional(),
   taxRate: z.number().min(0).max(1).optional(),
 });
 

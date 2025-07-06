@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   CreditCard,
@@ -10,6 +10,8 @@ import {
   Package,
   CheckCircle,
 } from "lucide-react";
+import { Elements } from "@stripe/react-stripe-js";
+import { getStripe } from "@/lib/stripe";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -24,6 +26,7 @@ import { toast } from "sonner";
 import Link from "next/link";
 import Navigation from "../components/Navigation";
 import Footer from "../components/Footer";
+import StripePaymentForm from "../components/StripePaymentForm";
 
 interface ShippingForm {
   firstName: string;
@@ -53,6 +56,9 @@ export default function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState("card");
   const [agreeToTerms, setAgreeToTerms] = useState(false);
   const [processing, setProcessing] = useState(false);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
+  const [stripePromise, setStripePromise] = useState<any>(null);
 
   const [shippingForm, setShippingForm] = useState<ShippingForm>({
     firstName: user?.name?.split(" ")[0] || "",
@@ -100,6 +106,15 @@ export default function CheckoutPage() {
   const tax = totalPrice * 0.15; // 15% VAT
   const grandTotal = totalPrice + shippingCost + tax;
 
+  // Initialize Stripe
+  useEffect(() => {
+    const initializeStripe = async () => {
+      const stripe = await getStripe();
+      setStripePromise(stripe);
+    };
+    initializeStripe();
+  }, []);
+
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
@@ -139,23 +154,100 @@ export default function CheckoutPage() {
       return;
     }
 
-    if (paymentMethod === "card") {
-      // Validate payment form
-      const requiredFields = ["cardNumber", "expiryDate", "cvv", "cardHolder"];
-      const missingFields = requiredFields.filter(
-        (field) => !paymentForm[field as keyof PaymentForm]
-      );
-
-      if (missingFields.length > 0) {
-        toast.error("Please fill in all payment details");
-        return;
-      }
-    }
-
     setProcessing(true);
 
     try {
-      // Prepare order data
+      if (paymentMethod === "card") {
+        // Handle Stripe payment
+        await handleStripePayment();
+      } else {
+        // Handle Cash on Delivery
+        await handleCashOnDelivery();
+      }
+    } catch (error) {
+      console.error("Payment error:", error);
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Payment failed. Please try again."
+      );
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleStripePayment = async () => {
+    try {
+      // Create payment intent
+      const { createPaymentIntent } = await import("@/lib/stripe");
+
+      const paymentIntentData = await createPaymentIntent({
+        amount: grandTotal,
+        currency: "usd",
+        customerEmail: shippingForm.email,
+        customerName: `${shippingForm.firstName} ${shippingForm.lastName}`,
+        metadata: {
+          shippingMethod: shippingMethod,
+          itemCount: items.length.toString(),
+        },
+      });
+
+      setClientSecret(paymentIntentData.clientSecret);
+      setPaymentIntentId(paymentIntentData.paymentIntentId);
+      setCurrentStep(3); // Move to Stripe payment step
+    } catch (error) {
+      throw new Error("Failed to initialize payment");
+    }
+  };
+
+  const handleCashOnDelivery = async () => {
+    // Create order directly for COD
+    const orderData = {
+      items: items.map((item) => ({
+        partId: item.id,
+        quantity: item.quantity,
+      })),
+      shipping: {
+        method: shippingMethod,
+        cost: shippingCost,
+        estimatedDays:
+          selectedShipping?.id === "sameday"
+            ? 1
+            : selectedShipping?.id === "express"
+            ? 2
+            : 5,
+        address: shippingForm,
+      },
+      payment: {
+        method: paymentMethod,
+      },
+      taxRate: 0.15,
+    };
+
+    const response = await fetch("/api/orders", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+      },
+      body: JSON.stringify(orderData),
+    });
+
+    const result = await response.json();
+
+    if (response.ok) {
+      clearCart();
+      toast.success("Order placed successfully!");
+      localStorage.setItem("lastOrder", JSON.stringify(result.order));
+      router.push("/checkout/success");
+    } else {
+      throw new Error(result.error || "Failed to create order");
+    }
+  };
+
+  const handleStripeSuccess = async (paymentIntent: any) => {
+    try {
+      // Create order with payment intent ID
       const orderData = {
         items: items.map((item) => ({
           partId: item.id,
@@ -173,18 +265,18 @@ export default function CheckoutPage() {
           address: shippingForm,
         },
         payment: {
-          method: paymentMethod,
-          cardDetails: paymentMethod === "card" ? paymentForm : undefined,
+          method: "card",
+          paymentIntentId: paymentIntent.id,
+          status: "paid",
         },
         taxRate: 0.15,
       };
 
-      // Create order via API
       const response = await fetch("/api/orders", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
         },
         body: JSON.stringify(orderData),
       });
@@ -192,27 +284,24 @@ export default function CheckoutPage() {
       const result = await response.json();
 
       if (response.ok) {
-        // Order created successfully
         clearCart();
-        toast.success("Order placed successfully!");
-
-        // Store order details for success page
+        toast.success("Payment successful! Order placed.");
         localStorage.setItem("lastOrder", JSON.stringify(result.order));
-
         router.push("/checkout/success");
       } else {
         throw new Error(result.error || "Failed to create order");
       }
     } catch (error) {
-      console.error("Order creation error:", error);
+      console.error("Order creation error after payment:", error);
       toast.error(
-        error instanceof Error
-          ? error.message
-          : "Payment failed. Please try again."
+        "Payment succeeded but failed to create order. Please contact support."
       );
-    } finally {
-      setProcessing(false);
     }
+  };
+
+  const handleStripeError = (error: string) => {
+    toast.error(error);
+    setProcessing(false);
   };
 
   // Redirect if not logged in
@@ -310,10 +399,33 @@ export default function CheckoutPage() {
                     : "border-gray-300"
                 }`}
               >
-                2
+                {currentStep > 2 ? <CheckCircle className="h-4 w-4" /> : "2"}
               </div>
               <span className="ml-2 hidden sm:block">Payment</span>
             </div>
+
+            {paymentMethod === "card" && (
+              <>
+                <div className="w-12 h-px bg-gray-300"></div>
+
+                <div
+                  className={`flex items-center ${
+                    currentStep >= 3 ? "text-[#D72638]" : "text-gray-400"
+                  }`}
+                >
+                  <div
+                    className={`w-8 h-8 rounded-full border-2 flex items-center justify-center ${
+                      currentStep >= 3
+                        ? "border-[#D72638] bg-[#D72638] text-white"
+                        : "border-gray-300"
+                    }`}
+                  >
+                    3
+                  </div>
+                  <span className="ml-2 hidden sm:block">Secure Payment</span>
+                </div>
+              </>
+            )}
           </div>
         </div>
 
@@ -536,74 +648,13 @@ export default function CheckoutPage() {
                 </Card>
 
                 {paymentMethod === "card" && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Card Details</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div>
-                        <Label htmlFor="cardHolder">Cardholder Name *</Label>
-                        <Input
-                          id="cardHolder"
-                          value={paymentForm.cardHolder}
-                          onChange={(e) =>
-                            setPaymentForm({
-                              ...paymentForm,
-                              cardHolder: e.target.value,
-                            })
-                          }
-                          required
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="cardNumber">Card Number *</Label>
-                        <Input
-                          id="cardNumber"
-                          placeholder="1234 5678 9012 3456"
-                          value={paymentForm.cardNumber}
-                          onChange={(e) =>
-                            setPaymentForm({
-                              ...paymentForm,
-                              cardNumber: e.target.value,
-                            })
-                          }
-                          required
-                        />
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor="expiryDate">Expiry Date *</Label>
-                          <Input
-                            id="expiryDate"
-                            placeholder="MM/YY"
-                            value={paymentForm.expiryDate}
-                            onChange={(e) =>
-                              setPaymentForm({
-                                ...paymentForm,
-                                expiryDate: e.target.value,
-                              })
-                            }
-                            required
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="cvv">CVV *</Label>
-                          <Input
-                            id="cvv"
-                            placeholder="123"
-                            value={paymentForm.cvv}
-                            onChange={(e) =>
-                              setPaymentForm({
-                                ...paymentForm,
-                                cvv: e.target.value,
-                              })
-                            }
-                            required
-                          />
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                  <Alert>
+                    <CreditCard className="h-4 w-4" />
+                    <AlertDescription>
+                      You'll securely enter your card details on the next step
+                      using our encrypted payment processor.
+                    </AlertDescription>
+                  </Alert>
                 )}
 
                 {paymentMethod === "cod" && (
@@ -664,10 +715,45 @@ export default function CheckoutPage() {
                   >
                     {processing
                       ? "Processing..."
-                      : `Pay ${formatPrice(grandTotal)}`}
+                      : paymentMethod === "card"
+                      ? "Continue to Secure Payment"
+                      : `Place Order - ${formatPrice(grandTotal)}`}
                   </Button>
                 </div>
               </form>
+            )}
+
+            {/* Step 3: Stripe Payment */}
+            {currentStep === 3 && clientSecret && stripePromise && (
+              <div className="space-y-6">
+                <Elements
+                  stripe={stripePromise}
+                  options={{
+                    clientSecret,
+                    appearance: {
+                      theme: "stripe",
+                    },
+                  }}
+                >
+                  <StripePaymentForm
+                    clientSecret={clientSecret}
+                    amount={grandTotal}
+                    onSuccess={handleStripeSuccess}
+                    onError={handleStripeError}
+                  />
+                </Elements>
+
+                <div className="flex gap-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setCurrentStep(2)}
+                    className="flex-1"
+                  >
+                    Back to Payment Method
+                  </Button>
+                </div>
+              </div>
             )}
           </div>
 

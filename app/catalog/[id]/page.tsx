@@ -135,14 +135,16 @@ export default function PartDetailPage() {
         await navigator.share({
           title: part?.name,
           text: `Check out this ${part?.name} - ${part?.description}`,
-          url: window.location.href,
+          url: typeof window !== "undefined" ? window.location.href : "",
         });
       } catch (error) {
         console.log("Error sharing:", error);
       }
     } else {
       // Fallback: copy to clipboard
-      navigator.clipboard.writeText(window.location.href);
+      if (typeof window !== "undefined") {
+        navigator.clipboard.writeText(window.location.href);
+      }
       toast.success("Link copied to clipboard!");
     }
   };

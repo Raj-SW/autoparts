@@ -93,16 +93,25 @@ export async function POST(request: NextRequest) {
       shippingCost,
       tax,
       total,
-      shipping: orderData.shipping,
+      shipping: {
+        ...orderData.shipping,
+        status: "pending",
+      },
       payment: {
         method: orderData.payment.method,
-        status: orderData.payment.method === "cod" ? "pending" : "processing",
+        status:
+          orderData.payment.method === "cod"
+            ? "pending"
+            : orderData.payment.status || "processing",
+        paymentIntentId: orderData.payment.paymentIntentId,
+        paidAt: orderData.payment.status === "paid" ? new Date() : undefined,
       },
-      status: "processing",
+      status: orderData.payment.status === "paid" ? "confirmed" : "pending",
       estimatedDelivery: new Date(
         Date.now() +
           (orderData.shipping.estimatedDays || 5) * 24 * 60 * 60 * 1000
       ),
+      customerNotes: orderData.customerNotes,
       createdAt: new Date(),
       updatedAt: new Date(),
     };

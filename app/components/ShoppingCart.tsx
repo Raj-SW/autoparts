@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -19,6 +20,7 @@ import { toast } from "sonner";
 import Link from "next/link";
 
 export default function ShoppingCartComponent() {
+  const router = useRouter();
   const {
     items,
     totalItems,
@@ -49,8 +51,9 @@ export default function ShoppingCartComponent() {
       return;
     }
 
-    // Here we would typically navigate to checkout
-    toast.info("Checkout functionality coming soon!");
+    // Close the cart sheet and navigate to checkout
+    setIsOpen(false);
+    router.push("/checkout");
   };
 
   return (
