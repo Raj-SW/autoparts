@@ -57,12 +57,12 @@ import { withAuth } from "@/contexts/AuthContext";
 import { BreadcrumbWrapper } from "@/components/BreadcrumbWrapper";
 
 interface OrderItem {
-  partId: string;
-  partNumber: string;
-  name: string;
-  price: number;
-  quantity: number;
-  total: number;
+  partId?: string;
+  partNumber?: string;
+  name?: string;
+  price?: number;
+  quantity?: number;
+  total?: number;
   image?: string;
 }
 
@@ -80,23 +80,23 @@ interface Order {
   estimatedDelivery?: string;
   actualDelivery?: string;
   trackingNumber?: string;
-  shipping: {
+  shipping?: {
     method: string;
     status: string;
-    address: {
-      firstName: string;
-      lastName: string;
-      email: string;
-      phone: string;
-      address: string;
-      city: string;
+    address?: {
+      firstName?: string;
+      lastName?: string;
+      email?: string;
+      phone?: string;
+      address?: string;
+      city?: string;
       postalCode?: string;
-      country: string;
+      country?: string;
     };
   };
-  payment: {
-    method: string;
-    status: string;
+  payment?: {
+    method?: string;
+    status?: string;
   };
   customerNotes?: string;
   adminNotes?: string;
@@ -373,23 +373,25 @@ function AdminOrdersPage() {
   const filteredOrders = orders.filter((order) => {
     const matchesSearch =
       order.orderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.shipping.address.firstName
+      (order.shipping?.address?.firstName || "")
         .toLowerCase()
         .includes(searchTerm.toLowerCase()) ||
-      order.shipping.address.lastName
+      (order.shipping?.address?.lastName || "")
         .toLowerCase()
         .includes(searchTerm.toLowerCase()) ||
-      order.shipping.address.email
+      (order.shipping?.address?.email || "")
         .toLowerCase()
         .includes(searchTerm.toLowerCase()) ||
-      order.items.some(
+      (order.items || []).some(
         (item) =>
-          item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          item.partNumber.toLowerCase().includes(searchTerm.toLowerCase())
+          (item.name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (item.partNumber || "")
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase())
       );
 
     const matchesPayment =
-      paymentFilter === "all" || order.payment.status === paymentFilter;
+      paymentFilter === "all" || order.payment?.status === paymentFilter;
 
     return matchesSearch && matchesPayment;
   });
@@ -603,24 +605,24 @@ function AdminOrdersPage() {
                         </TableCell>
                         <TableCell>
                           <div className="font-medium">
-                            {order.shipping.address.firstName}{" "}
-                            {order.shipping.address.lastName}
+                            {order.shipping?.address?.firstName || "N/A"}{" "}
+                            {order.shipping?.address?.lastName || ""}
                           </div>
                           <div className="text-sm text-gray-500">
-                            {order.shipping.address.email}
+                            {order.shipping?.address?.email || "No email"}
                           </div>
                         </TableCell>
                         <TableCell>
                           <div className="text-sm">
-                            {order.items.length} item
-                            {order.items.length !== 1 ? "s" : ""}
+                            {(order.items || []).length} item
+                            {(order.items || []).length !== 1 ? "s" : ""}
                           </div>
                           <div className="text-xs text-gray-500">
-                            {order.items
+                            {(order.items || [])
                               .slice(0, 2)
-                              .map((item) => item.name)
+                              .map((item) => item.name || "Unknown")
                               .join(", ")}
-                            {order.items.length > 2 && "..."}
+                            {(order.items || []).length > 2 && "..."}
                           </div>
                         </TableCell>
                         <TableCell>
@@ -637,14 +639,16 @@ function AdminOrdersPage() {
                         <TableCell>
                           <Badge
                             className={`${getPaymentStatusColor(
-                              order.payment.status
+                              order.payment?.status || "unknown"
                             )} w-fit`}
                           >
-                            {order.payment.status.charAt(0).toUpperCase() +
-                              order.payment.status.slice(1)}
+                            {(order.payment?.status || "unknown")
+                              .charAt(0)
+                              .toUpperCase() +
+                              (order.payment?.status || "unknown").slice(1)}
                           </Badge>
                           <div className="text-xs text-gray-500 mt-1">
-                            {order.payment.method === "card"
+                            {order.payment?.method === "card"
                               ? "Card"
                               : "Cash on Delivery"}
                           </div>
@@ -729,14 +733,16 @@ function AdminOrdersPage() {
                     <CardContent>
                       <Badge
                         className={`${getPaymentStatusColor(
-                          selectedOrder.payment.status
+                          selectedOrder.payment?.status || "unknown"
                         )} w-fit`}
                       >
-                        {selectedOrder.payment.status.charAt(0).toUpperCase() +
-                          selectedOrder.payment.status.slice(1)}
+                        {(selectedOrder.payment?.status || "unknown")
+                          .charAt(0)
+                          .toUpperCase() +
+                          (selectedOrder.payment?.status || "unknown").slice(1)}
                       </Badge>
                       <div className="text-xs text-gray-500 mt-1">
-                        {selectedOrder.payment.method === "card"
+                        {selectedOrder.payment?.method === "card"
                           ? "Credit Card"
                           : "Cash on Delivery"}
                       </div>
@@ -771,17 +777,24 @@ function AdminOrdersPage() {
                           <div className="flex items-center gap-2">
                             <User className="h-4 w-4 text-gray-400" />
                             <span>
-                              {selectedOrder.shipping.address.firstName}{" "}
-                              {selectedOrder.shipping.address.lastName}
+                              {selectedOrder.shipping?.address?.firstName ||
+                                "N/A"}{" "}
+                              {selectedOrder.shipping?.address?.lastName || ""}
                             </span>
                           </div>
                           <div className="flex items-center gap-2">
                             <Mail className="h-4 w-4 text-gray-400" />
-                            <span>{selectedOrder.shipping.address.email}</span>
+                            <span>
+                              {selectedOrder.shipping?.address?.email ||
+                                "No email"}
+                            </span>
                           </div>
                           <div className="flex items-center gap-2">
                             <Phone className="h-4 w-4 text-gray-400" />
-                            <span>{selectedOrder.shipping.address.phone}</span>
+                            <span>
+                              {selectedOrder.shipping?.address?.phone ||
+                                "No phone"}
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -791,14 +804,23 @@ function AdminOrdersPage() {
                         <div className="flex items-start gap-2 text-sm">
                           <MapPin className="h-4 w-4 text-gray-400 mt-0.5" />
                           <div>
-                            <div>{selectedOrder.shipping.address.address}</div>
-                            <div>{selectedOrder.shipping.address.city}</div>
-                            {selectedOrder.shipping.address.postalCode && (
+                            <div>
+                              {selectedOrder.shipping?.address?.address ||
+                                "No address"}
+                            </div>
+                            <div>
+                              {selectedOrder.shipping?.address?.city ||
+                                "No city"}
+                            </div>
+                            {selectedOrder.shipping?.address?.postalCode && (
                               <div>
                                 {selectedOrder.shipping.address.postalCode}
                               </div>
                             )}
-                            <div>{selectedOrder.shipping.address.country}</div>
+                            <div>
+                              {selectedOrder.shipping?.address?.country ||
+                                "No country"}
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -816,26 +838,28 @@ function AdminOrdersPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      {selectedOrder.items.map((item, index) => (
+                      {(selectedOrder.items || []).map((item, index) => (
                         <div
                           key={index}
                           className="flex items-center justify-between py-3 border-b last:border-b-0"
                         >
                           <div className="flex-1">
-                            <h4 className="font-semibold">{item.name}</h4>
+                            <h4 className="font-semibold">
+                              {item.name || "Unknown Item"}
+                            </h4>
                             <p className="text-sm text-gray-600">
-                              Part #: {item.partNumber}
+                              Part #: {item.partNumber || "N/A"}
                             </p>
                             <p className="text-sm text-gray-600">
-                              Quantity: {item.quantity}
+                              Quantity: {item.quantity || 0}
                             </p>
                           </div>
                           <div className="text-right">
                             <p className="font-semibold">
-                              {formatPrice(item.total)}
+                              {formatPrice(item.total || 0)}
                             </p>
                             <p className="text-sm text-gray-600">
-                              {formatPrice(item.price)} each
+                              {formatPrice(item.price || 0)} each
                             </p>
                           </div>
                         </div>
