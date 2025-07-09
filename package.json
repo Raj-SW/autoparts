@@ -7,7 +7,14 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "generate-env": "node scripts/generate-env.js"
+    "generate-env": "node scripts/generate-env.js",
+    "docker:dev": "docker-compose up -d",
+    "docker:dev:build": "docker-compose up --build -d",
+    "docker:dev:logs": "docker-compose logs -f app",
+    "docker:dev:stop": "docker-compose down",
+    "docker:dev:reset": "docker-compose down -v && docker-compose up --build -d",
+    "docker:build": "docker build -t autoparts-app .",
+    "docker:prod:build": "docker build -t autoparts-app --build-arg NEXT_PUBLIC_API_URL=https://your-domain.com --build-arg NEXT_PUBLIC_APP_URL=https://your-domain.com ."
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
