@@ -54,9 +54,9 @@ export default function CatalogPage() {
 
   const [filters, setFilters] = useState<SearchFilters>({
     search: searchParams.get("search") || "",
-    vehicleMake: "",
-    category: "",
-    condition: "",
+    vehicleMake: "all-makes",
+    category: "all-categories",
+    condition: "all-conditions",
     minPrice: "",
     maxPrice: "",
     inStock: false,
@@ -94,9 +94,9 @@ export default function CatalogPage() {
       const params: any = {};
 
       if (filters.search) params.search = filters.search;
-      if (filters.vehicleMake) params.vehicleMake = filters.vehicleMake;
-      if (filters.category) params.category = filters.category;
-      if (filters.condition) params.condition = filters.condition;
+      if (filters.vehicleMake && filters.vehicleMake !== "all-makes") params.vehicleMake = filters.vehicleMake;
+      if (filters.category && filters.category !== "all-categories") params.category = filters.category;
+      if (filters.condition && filters.condition !== "all-conditions") params.condition = filters.condition;
       if (filters.minPrice) params.minPrice = filters.minPrice;
       if (filters.maxPrice) params.maxPrice = filters.maxPrice;
       if (filters.inStock) params.inStock = "true";
@@ -140,9 +140,9 @@ export default function CatalogPage() {
   const resetFilters = () => {
     setFilters({
       search: "",
-      vehicleMake: "",
-      category: "",
-      condition: "",
+      vehicleMake: "all-makes",
+      category: "all-categories",
+      condition: "all-conditions",
       minPrice: "",
       maxPrice: "",
       inStock: false,
@@ -241,7 +241,7 @@ export default function CatalogPage() {
                           <SelectValue placeholder="All Makes" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">All Makes</SelectItem>
+                          <SelectItem value="all-makes">All Makes</SelectItem>
                           {vehicleMakes.map((make) => (
                             <SelectItem key={make} value={make}>
                               {make}
@@ -265,7 +265,9 @@ export default function CatalogPage() {
                           <SelectValue placeholder="All Categories" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">All Categories</SelectItem>
+                          <SelectItem value="all-categories">
+                            All Categories
+                          </SelectItem>
                           {categories.map((category) => (
                             <SelectItem key={category} value={category}>
                               {category}
@@ -289,7 +291,9 @@ export default function CatalogPage() {
                           <SelectValue placeholder="All Conditions" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">All Conditions</SelectItem>
+                          <SelectItem value="all-conditions">
+                            All Conditions
+                          </SelectItem>
                           {conditions.map((condition) => (
                             <SelectItem key={condition} value={condition}>
                               {condition}
