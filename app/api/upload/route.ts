@@ -67,8 +67,9 @@ export const POST = withAdminAuth(
       console.log(`Buffer created, size: ${buffer.length} bytes`);
 
       // Upload to Cloudinary with improved error handling
+      const cloudinaryInstance = cloudinary();
       const result = await new Promise((resolve, reject) => {
-        const uploadStream = cloudinary.uploader.upload_stream(
+        const uploadStream = cloudinaryInstance.uploader.upload_stream(
           {
             resource_type: "image",
             folder: "autoparts",
@@ -136,7 +137,8 @@ export const DELETE = withAdminAuth(
       }
 
       // Delete from Cloudinary
-      const result = await cloudinary.uploader.destroy(publicId);
+      const cloudinaryInstance = cloudinary();
+      const result = await cloudinaryInstance.uploader.destroy(publicId);
 
       return NextResponse.json({
         message: "Image deleted successfully",

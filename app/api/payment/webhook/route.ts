@@ -4,12 +4,24 @@ import Stripe from "stripe";
 import { getDatabase } from "@/lib/db/mongodb";
 import { ObjectId } from "mongodb";
 
-// Initialize Stripe
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2024-06-20",
-});
+// Lazy Stripe initialization
+function getStripe(): Stripe {
+  const secretKey = process.env.STRIPE_SECRET_KEY;
+  if (!secretKey) {
+    throw new Error("STRIPE_SECRET_KEY is required");
+  }
+  return new Stripe(secretKey, {
+    apiVersion: "2024-06-20",
+  });
+}
 
-const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET!;
+function getEndpointSecret(): string {
+  const secret = process.env.STRIPE_WEBHOOK_SECRET;
+  if (!secret) {
+    throw new Error("STRIPE_WEBHOOK_SECRET is required");
+  }
+  return secret;
+}
 
 export async function POST(request: NextRequest) {
   const body = await request.text();
@@ -19,6 +31,8 @@ export async function POST(request: NextRequest) {
   let event: Stripe.Event;
 
   try {
+    const stripe = getStripe();
+    const endpointSecret = getEndpointSecret();
     event = stripe.webhooks.constructEvent(body, signature, endpointSecret);
   } catch (error) {
     console.error("Webhook signature verification failed:", error);

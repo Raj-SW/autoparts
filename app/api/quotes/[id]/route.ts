@@ -4,7 +4,7 @@ import { withAdminAuth, AuthUser } from "@/middleware/auth";
 import { IQuote } from "@/models/Quote";
 import { ObjectId } from "mongodb";
 import { z } from "zod";
-import { emailService } from "@/lib/email/email-service";
+import { getEmailService } from "@/lib/email/email-service";
 import { pdfGenerator } from "@/lib/pdf/pdf-generator";
 
 // Quote update schema for admin responses
@@ -168,7 +168,7 @@ export const PUT = withAdminAuth(
 
           // Send quote response email to customer
           const customerEmailSent =
-            await emailService.sendQuoteResponseToCustomer(
+            await getEmailService().sendQuoteResponseToCustomer(
               updatedQuote,
               pdfBuffer
             );

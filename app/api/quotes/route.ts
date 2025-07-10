@@ -5,7 +5,7 @@ import { createQuoteSchema } from "@/utils/validation";
 import { IQuote } from "@/models/Quote";
 import { ObjectId } from "mongodb";
 import { z } from "zod";
-import { emailService } from "@/lib/email/email-service";
+import { getEmailService } from "@/lib/email/email-service";
 import { pdfGenerator } from "@/lib/pdf/pdf-generator";
 
 // GET /api/quotes - Get quotes (Admin: all quotes, User: own quotes)
@@ -144,10 +144,11 @@ export async function POST(request: NextRequest) {
       console.log(`📄 PDF generated for quote ${quoteNumber}`);
 
       // Send notification to admin with PDF attachment
-      const adminEmailSent = await emailService.sendQuoteNotificationToAdmin(
-        createdQuote,
-        pdfBuffer
-      );
+      const adminEmailSent =
+        await getEmailService().sendQuoteNotificationToAdmin(
+          createdQuote,
+          pdfBuffer
+        );
       console.log(
         `📧 Admin notification ${
           adminEmailSent ? "sent successfully" : "failed"
@@ -156,7 +157,7 @@ export async function POST(request: NextRequest) {
 
       // Send confirmation email to customer
       const customerEmailSent =
-        await emailService.sendQuoteConfirmationToCustomer(createdQuote);
+        await getEmailService().sendQuoteConfirmationToCustomer(createdQuote);
       console.log(
         `📧 Customer confirmation ${
           customerEmailSent ? "sent successfully" : "failed"

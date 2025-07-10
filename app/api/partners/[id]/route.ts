@@ -6,7 +6,7 @@ import { IPartner } from "@/models/Partner";
 import { ObjectId } from "mongodb";
 import { z } from "zod";
 import { pdfGenerator } from "@/lib/pdf/pdf-generator";
-import { emailService } from "@/lib/email/email-service";
+import { getEmailService } from "@/lib/email/email-service";
 
 interface RouteParams {
   params: {
@@ -168,7 +168,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
           }
         }
 
-        await emailService.sendPartnerStatusUpdateToApplicant(
+        await getEmailService().sendPartnerStatusUpdateToApplicant(
           updatedPartner,
           pdfBuffer
         );

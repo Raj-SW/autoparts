@@ -3,10 +3,16 @@ import { withAuth, AuthUser } from "@/middleware/auth";
 import Stripe from "stripe";
 import { z } from "zod";
 
-// Initialize Stripe
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2024-06-20",
-});
+// Lazy Stripe initialization
+function getStripe(): Stripe {
+  const secretKey = process.env.STRIPE_SECRET_KEY;
+  if (!secretKey) {
+    throw new Error("STRIPE_SECRET_KEY is required");
+  }
+  return new Stripe(secretKey, {
+    apiVersion: "2024-06-20",
+  });
+}
 
 // Payment intent schema
 const paymentIntentSchema = z.object({
@@ -37,6 +43,7 @@ export const POST = withAuth(async (request: NextRequest, user: AuthUser) => {
     }
 
     // Create payment intent
+    const stripe = getStripe();
     const paymentIntent = await stripe.paymentIntents.create({
       amount: Math.round(validatedData.amount * 100), // Convert to cents
       currency: validatedData.currency,

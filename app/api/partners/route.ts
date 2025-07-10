@@ -6,7 +6,7 @@ import { IPartner } from "@/models/Partner";
 import { ObjectId } from "mongodb";
 import { z } from "zod";
 import { pdfGenerator } from "@/lib/pdf/pdf-generator";
-import { emailService } from "@/lib/email/email-service";
+import { getEmailService } from "@/lib/email/email-service";
 
 // Helper function to generate application number
 function generateApplicationNumber(): string {
@@ -94,13 +94,13 @@ export const POST = withAuth(async (request: NextRequest, user: AuthUser) => {
     // Send emails (don't fail the request if email fails)
     try {
       // Send confirmation email to applicant
-      await emailService.sendPartnerApplicationConfirmationToApplicant(
+      await getEmailService().sendPartnerApplicationConfirmationToApplicant(
         createdPartner,
         pdfBuffer
       );
 
       // Send notification email to admin
-      await emailService.sendPartnerApplicationNotificationToAdmin(
+      await getEmailService().sendPartnerApplicationNotificationToAdmin(
         createdPartner,
         pdfBuffer
       );
