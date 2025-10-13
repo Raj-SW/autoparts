@@ -37,7 +37,7 @@ services:
       - "3000:3000"
     environment:
       # Database
-      MONGODB_URI: mongodb://autoparts_user:autoparts_pass@mongodb:27017/autoparts
+      MONGODB_URI: mongodb://root:rootpassword@mongodb:27017/autoparts
 
       # JWT Secrets (change these in production)
       JWT_SECRET: development-jwt-secret-minimum-32-chars

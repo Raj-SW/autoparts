@@ -20,7 +20,7 @@ function getJwtRefreshSecret(): string {
 interface TokenPayload {
   userId: string;
   email: string;
-  role: "admin" | "user";
+  role: "admin" | "customer";
 }
 
 interface RefreshTokenPayload {
@@ -31,7 +31,7 @@ interface RefreshTokenPayload {
 export function generateTokens(user: {
   _id: ObjectId;
   email: string;
-  role: "admin" | "user";
+  role: "admin" | "customer";
 }) {
   const payload: TokenPayload = {
     userId: user._id.toString(),
