@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "generate-env": "node scripts/generate-env.js",
+    "seed:body-parts": "node scripts/seed-body-parts.js",
     "docker:dev": "docker-compose up -d",
     "docker:dev:build": "docker-compose up --build -d",
     "docker:dev:logs": "docker-compose logs -f app",
