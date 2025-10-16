@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
-import { Search, Filter, Grid, List, ShoppingCart } from "lucide-react";
+import { Search, Grid, List, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -47,7 +47,6 @@ export default function CatalogPage() {
   const [parts, setParts] = useState<Part[]>([]);
   const [loading, setLoading] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [showFilters, setShowFilters] = useState(false);
   const [totalCount, setTotalCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [sortBy, setSortBy] = useState("name");
@@ -204,19 +203,11 @@ export default function CatalogPage() {
                   className="pl-10"
                 />
               </div>
-              <Button
-                variant="outline"
-                onClick={() => setShowFilters(!showFilters)}
-              >
-                <Filter className="h-4 w-4 mr-2" />
-                Filters
-              </Button>
               <Button onClick={searchParts}>Search</Button>
             </div>
 
             {/* Filter Panel */}
-            {showFilters && (
-              <Card>
+            <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
                     <span>Filters</span>
@@ -310,6 +301,8 @@ export default function CatalogPage() {
                       <Input
                         type="number"
                         placeholder="$0"
+                        min="0"
+                        step="0.01"
                         value={filters.minPrice}
                         onChange={(e) =>
                           setFilters({ ...filters, minPrice: e.target.value })
@@ -324,6 +317,8 @@ export default function CatalogPage() {
                       <Input
                         type="number"
                         placeholder="No limit"
+                        min="0"
+                        step="0.01"
                         value={filters.maxPrice}
                         onChange={(e) =>
                           setFilters({ ...filters, maxPrice: e.target.value })
@@ -333,7 +328,6 @@ export default function CatalogPage() {
                   </div>
                 </CardContent>
               </Card>
-            )}
           </div>
         </div>
       </div>
