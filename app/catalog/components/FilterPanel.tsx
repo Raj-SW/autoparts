@@ -31,10 +31,10 @@ export const FilterPanel = memo(function FilterPanel({
   };
 
   // Memoize sorted options
-  const sortedMakes = useMemo(() => [...CAR_MAKES].sort(), []);
-  const sortedCategories = useMemo(() => [...PART_CATEGORIES].sort(), []);
-  const sortedConditions = useMemo(() => [...PART_CONDITIONS].sort(), []);
-  const sortedBrands = useMemo(() => [...availableBrands].sort(), [availableBrands]);
+  const sortedMakes = useMemo(() => [...CAR_MAKES].sort((a, b) => a.localeCompare(b)), []);
+  const sortedCategories = useMemo(() => [...PART_CATEGORIES].sort((a, b) => a.localeCompare(b)), []);
+  const sortedConditions = useMemo(() => [...PART_CONDITIONS].sort((a, b) => a.localeCompare(b)), []);
+  const sortedBrands = useMemo(() => [...availableBrands].sort((a, b) => a.localeCompare(b)), [availableBrands]);
 
   return (
     <Card>
@@ -48,7 +48,7 @@ export const FilterPanel = memo(function FilterPanel({
       </CardHeader>
       
       <CardContent>
-        <div className="space-y-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {/* Vehicle Make */}
           <div>
             <Label htmlFor="vehicle-make" className="text-sm font-medium">
@@ -152,7 +152,7 @@ export const FilterPanel = memo(function FilterPanel({
           </div>
 
           {/* Price Range */}
-          <div className="space-y-2">
+          <div className="space-y-2 md:col-span-2 lg:col-span-1">
             <Label className="text-sm font-medium">Price Range (MUR)</Label>
             <div className="grid grid-cols-2 gap-2">
               <div>
@@ -175,7 +175,7 @@ export const FilterPanel = memo(function FilterPanel({
           </div>
 
           {/* In Stock Only */}
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2 pt-6">
             <Checkbox
               id="in-stock"
               checked={filters.inStock || false}

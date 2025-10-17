@@ -15,6 +15,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -25,44 +27,8 @@ import { toast } from "sonner";
 import Link from "next/link";
 import Navigation from "../../components/Navigation";
 import Footer from "../../components/Footer";
-
-// Backward compatible interface - will gradually transition to use centralized IPart model
-interface Part {
-  _id: string;
-  id?: string; // API sometimes returns id instead of _id
-  partNumber: string;
-  name: string;
-  description: string;
-  category: string;
-  subcategory?: string;
-  brand: string;
-  manufacturer?: string;
-  price: number;
-  costPrice?: number;
-  currency?: string;
-  stock: number;
-  lowStockThreshold?: number;
-  sku?: string;
-  location?: string;
-  images: {
-    url: string;
-    publicId: string;
-    width?: number;
-    height?: number;
-  }[];
-  specifications: Record<string, any>;
-  compatibility: Record<string, any>;
-  tags?: string[];
-  searchKeywords?: string[];
-  isActive?: boolean;
-  isFeatured?: boolean;
-  averageRating?: number;
-  reviewCount?: number;
-  createdAt?: Date;
-  updatedAt?: Date;
-  createdBy?: string;
-  lastModifiedBy?: string;
-}
+import type { Part } from "@/types";
+import { formatPrice } from "@/lib/utils/formatters";
 
 export default function PartDetailPage() {
   const params = useParams();
@@ -92,15 +58,16 @@ export default function PartDetailPage() {
         partData.images = [];
       }
 
-      // Handle both _id and id fields
-      if (partData && partData.id && !partData._id) {
-        partData._id = partData.id;
+      // Handle both _id and id fields - normalize to _id
+      if (partData && 'id' in partData && !partData._id) {
+        partData._id = partData.id as string;
       }
 
       setPart(partData);
     } catch (error) {
       console.error("Fetch part error:", error);
-      toast.error("Failed to load part details. Please try again.");
+      const message = error instanceof Error ? error.message : "Failed to load part details. Please try again.";
+      toast.error(message);
       setPart(null);
     } finally {
       setLoading(false);
@@ -108,11 +75,11 @@ export default function PartDetailPage() {
   };
 
   const handleAddToCart = () => {
-    if (!part) return;
+    if (!part?._id) return;
 
     for (let i = 0; i < quantity; i++) {
       addItem({
-        id: part._id,
+        id: String(part._id),
         partNumber: part.partNumber,
         name: part.name,
         price: part.price,
@@ -120,13 +87,6 @@ export default function PartDetailPage() {
         image: part.images?.[0]?.url || "/placeholder.jpg",
       });
     }
-  };
-
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-    }).format(price);
   };
 
   const handleShare = async () => {
@@ -203,7 +163,8 @@ export default function PartDetailPage() {
     );
   }
 
-  const cartItem = getItem(part._id);
+  const partId = part._id ? String(part._id) : '';
+  const cartItem = getItem(partId);
   const maxQuantity = Math.min(part.stock, 10); // Limit to 10 or stock available
 
   return (
@@ -293,7 +254,7 @@ export default function PartDetailPage() {
             </div>
 
             <div className="text-3xl font-bold text-[#D72638]">
-              {formatPrice(part.price)}
+              {formatPrice(part.price, part.currency)}
             </div>
 
             <p className="text-gray-700 leading-relaxed">{part.description}</p>
@@ -336,26 +297,30 @@ export default function PartDetailPage() {
                 <div className="space-y-4">
                   <div className="flex items-center gap-4">
                     <div>
-                      <label className="block text-sm font-medium mb-2">
+                      <Label htmlFor="quantity" className="text-sm font-medium mb-2">
                         Quantity:
-                      </label>
-                      <select
-                        value={quantity}
-                        onChange={(e) => setQuantity(Number(e.target.value))}
-                        className="border rounded-md px-3 py-2 min-w-20"
+                      </Label>
+                      <Select
+                        value={quantity.toString()}
+                        onValueChange={(value) => setQuantity(Number(value))}
                         disabled={part.stock === 0}
                       >
-                        {[...Array(maxQuantity)].map((_, i) => (
-                          <option key={i + 1} value={i + 1}>
-                            {i + 1}
-                          </option>
-                        ))}
-                      </select>
+                        <SelectTrigger id="quantity" className="w-20">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {[...Array(maxQuantity)].map((_, i) => (
+                            <SelectItem key={i + 1} value={(i + 1).toString()}>
+                              {i + 1}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div className="flex-1">
                       <p className="text-sm text-gray-600">Total:</p>
                       <p className="text-xl font-bold text-[#D72638]">
-                        {formatPrice(part.price * quantity)}
+                        {formatPrice(part.price * quantity, part.currency)}
                       </p>
                     </div>
                   </div>
@@ -368,7 +333,7 @@ export default function PartDetailPage() {
                       size="lg"
                     >
                       <ShoppingCart className="h-5 w-5 mr-2" />
-                      {isInCart(part._id) ? "Update Cart" : "Add to Cart"}
+                      {isInCart(partId) ? "Update Cart" : "Add to Cart"}
                     </Button>
 
                     {!user && (
@@ -505,7 +470,7 @@ export default function PartDetailPage() {
                       <ul className="space-y-1 text-gray-600">
                         <li>• Same-day delivery within Port Louis area</li>
                         <li>• Island-wide delivery within 24-48 hours</li>
-                        <li>• Free shipping on orders over $100</li>
+                        <li>• Free shipping on orders over Rs 5,000</li>
                         <li>• Express delivery available</li>
                       </ul>
                     </div>
