@@ -72,7 +72,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (response.user.role === 'admin') {
         router.push('/admin');
       } else {
-        router.push('/dashboard');
+        router.push('/'); // Redirect to home page instead of dashboard
       }
     } catch (error: any) {
       toast.error(error.message || 'Login failed');
@@ -83,9 +83,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const register = async (data: RegisterData) => {
     try {
       const response = await apiClient.register(data);
-      setUser(response.user);
-      toast.success('Registration successful! Please check your email to verify your account.');
-      router.push('/dashboard');
+      // Don't set user or auto-login after registration
+      toast.success('Registration successful! Please check your email to verify your account and then login.');
+      router.push('/login');
     } catch (error: any) {
       toast.error(error.message || 'Registration failed');
       throw error;

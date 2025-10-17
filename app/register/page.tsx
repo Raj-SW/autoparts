@@ -97,6 +97,7 @@ export default function RegisterPage() {
         password: data.password,
         phoneNumber: data.phoneNumber,
       });
+      // Success message and redirect are handled by AuthContext
     } catch (error) {
       // Error is handled by the context with toast
     } finally {
