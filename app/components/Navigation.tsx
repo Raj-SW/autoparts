@@ -157,6 +157,59 @@ export default function Navigation() {
             </nav>
 
             <div className="mt-6 pt-4 border-t space-y-3">
+              {/* Mobile Cart */}
+              <div className="flex justify-center">
+                <ShoppingCartComponent />
+              </div>
+
+              {/* Mobile Auth Buttons */}
+              {user ? (
+                <div className="space-y-2">
+                  <div className="text-center text-sm text-gray-600">
+                    Welcome, {user.name}
+                  </div>
+                  <div className="flex space-x-2">
+                    <Button variant="outline" size="sm" className="flex-1" asChild>
+                      <Link href="/dashboard" onClick={() => setIsOpen(false)}>
+                        Dashboard
+                      </Link>
+                    </Button>
+                    {user.role === "admin" && (
+                      <Button variant="outline" size="sm" className="flex-1" asChild>
+                        <Link href="/admin" onClick={() => setIsOpen(false)}>
+                          Admin
+                        </Link>
+                      </Button>
+                    )}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    onClick={() => {
+                      logout();
+                      setIsOpen(false);
+                    }}
+                  >
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Logout
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex space-x-2">
+                  <Button variant="outline" size="sm" className="flex-1" asChild>
+                    <Link href="/login" onClick={() => setIsOpen(false)}>
+                      Login
+                    </Link>
+                  </Button>
+                  <Button size="sm" className="flex-1" asChild>
+                    <Link href="/register" onClick={() => setIsOpen(false)}>
+                      Register
+                    </Link>
+                  </Button>
+                </div>
+              )}
+
               <Button
                 className="w-full bg-[#D72638] hover:bg-[#B91C2C] text-white font-semibold"
                 onClick={() => {
