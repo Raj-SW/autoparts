@@ -3,12 +3,13 @@ const bcrypt = require("bcryptjs");
 
 // Database connection
 const MONGODB_URI =
-  process.env.MONGODB_URI || "mongodb://localhost:27017/amo-autoparts";
+  process.env.MONGODB_URI ||
+  "mongodb+srv://devtest1805_db_user:4cTZ7Df3Itj35YVu@cluster0.aewfrqa.mongodb.net/autoparts";
 
 // Helper function to generate random dates
 function randomDate(start, end) {
   return new Date(
-    start.getTime() + Math.random() * (end.getTime() - start.getTime())
+    start.getTime() + Math.random() * (end.getTime() - start.getTime()),
   );
 }
 
@@ -34,6 +35,7 @@ async function seedDatabase() {
   try {
     await client.connect();
     console.log("Connected to MongoDB");
+    console.log("Connected to MongoDB, seeding database...", MONGODB_URI);
 
     const db = client.db();
 
@@ -541,7 +543,7 @@ async function seedDatabase() {
         regularUsers[Math.floor(Math.random() * regularUsers.length)];
       const orderParts = parts.slice(
         Math.floor(Math.random() * 3),
-        Math.floor(Math.random() * 3) + 3
+        Math.floor(Math.random() * 3) + 3,
       );
 
       const items = orderParts.map((part) => ({
@@ -598,7 +600,7 @@ async function seedDatabase() {
         shippingMethod: shipping === 0 ? "standard" : "express",
         status: status,
         estimatedDelivery: new Date(
-          createdDate.getTime() + 5 * 24 * 60 * 60 * 1000
+          createdDate.getTime() + 5 * 24 * 60 * 60 * 1000,
         ),
         createdAt: createdDate,
         updatedAt: new Date(),
@@ -607,7 +609,7 @@ async function seedDatabase() {
         }),
         ...(status === "delivered" && {
           deliveredAt: new Date(
-            createdDate.getTime() + 4 * 24 * 60 * 60 * 1000
+            createdDate.getTime() + 4 * 24 * 60 * 60 * 1000,
           ),
           paidAt: new Date(createdDate.getTime() + 1 * 24 * 60 * 60 * 1000),
         }),
